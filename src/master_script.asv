@@ -59,19 +59,15 @@ free_params_vector = free_params_vector(4:5);
 
 % run fminsearch to fit parameters
 CI_fAV_minsearch = @(free_params_vector)get_nll_CI_fixedAV(AV_tar_pairs,AV_endpoint_data,fixed_params,free_params_vector);
-[fit_params_vector,min_nll_CI,~,~] = fminsearch(CI_fAV_minsearch,free_params_vector,options);
-
-%model does not converge, ends up with extremely large prior sig and
-%extremely low p_common indicating that these variables are adding very
-%little. Might make sense to introduce a bias term or something.
+[fit_params_vector,min_nll_CI,~,~] = fminsearch(CI_minsearch_fAV,free_params_vector,options);
 
 %put params back in structure format
-% fit_params_CI = free_params;
-% names = fieldnames(free_params);
-% for i=1:length(names)
-% fit_params_CI.(names{i})= fit_params_vector(i);
-% end
-% 
+fit_params_CI = free_params;
+names = fieldnames(free_params);
+for i=1:length(names)
+fit_params_CI.(names{i})= fit_params_vector(i);
+end
+
 
 %% model comparison
 
