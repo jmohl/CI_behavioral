@@ -69,8 +69,8 @@ legend('A mu resp', 'sigmoidal aud fit', 'unity ref line', 'Location', 'NorthWes
 xlabel('A tars')
 ylabel('A mus')
 grid on
-title('Unimodal Auditory localization bias - Juno (15 days)');
-saveas(gcf,sprintf('results\\aud_bias_fit_Juno'),'png');
+title('Unimodal Auditory localization bias - H02 (600tr)');
+saveas(gcf,sprintf('results\\aud_bias_fit_H02'),'png');
 
 %notes: from this its very clear that there is a sigmoidal + additive bias
 %here. The R^2 is like .99. This was done on Juno data. I'm going to try

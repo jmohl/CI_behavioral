@@ -95,6 +95,7 @@ subplot(4,1,4)
 hold on
 histogram(AV_endpoints,plot_points,'FaceColor','k','FaceAlpha',.25, 'Normalization','Probability')
 plot(plot_points,CI_pdf,'k')
+text(24,.2,sprintf('post common: %0.2d',post_common));
 title('Full model')
 ylabel('p')
 xlabel('position (deg)')
