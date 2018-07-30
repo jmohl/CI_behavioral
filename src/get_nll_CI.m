@@ -42,7 +42,8 @@ for i = 1:length(tar_pairs)
     % currently xa and xv are assumed to be the true target location,
     % however this might change in the future if I decide to use the mean
     % of the reported location instead. this also might be incorrect, and
-    % could be a sample taken from the mean instead?
+    % could be a sample taken from the mean instead? Could also make these
+    % a free parameter to allow for bias.
     xa = A_tar;
     xv = V_tar;
     

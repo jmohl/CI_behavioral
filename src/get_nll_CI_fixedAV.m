@@ -16,6 +16,9 @@ prior_mu = fixed_params.prior_mu;
 
 prior_sig = free_params(1);%sigma of centrality prior
 prior_common = free_params(2);%prior on common cause
+A_bias = free_params(3); %bias away from true target locations, shared across all A tars
+V_bias = free_params(4); %bias away from true target locations, shared across all V tars;
+
 
 if prior_common > 1 || prior_common < 0 %can't have probability above 1 or below 0
     n_loglikelihood = 100000000;

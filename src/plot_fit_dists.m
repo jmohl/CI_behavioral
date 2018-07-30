@@ -43,16 +43,19 @@ else
     A_sig = Ac_sig;
 end
 
+    xa = A_tar;
+    xv = V_tar;
+    
 %% get pdfs
 
 % get pdf assuming integration
-int_pdf = get_integrate_pdf(A_tar,V_tar,prior_mu,A_sig,V_sig,prior_sig,plot_points);
+int_pdf = get_integrate_pdf(xa,xv,prior_mu,A_sig,V_sig,prior_sig,plot_points);
 
 %get pdf assuming segregation
-[seg_pdf,A_pred,V_pred] = get_segregate_pdf(A_tar,V_tar,prior_mu,A_sig,V_sig,prior_sig,plot_points);
+[seg_pdf,A_pred,V_pred] = get_segregate_pdf(xa,xv,prior_mu,A_sig,V_sig,prior_sig,plot_points);
 
 %get posterior on common cause
-post_common = get_post_common(A_tar,V_tar,prior_mu,A_sig,V_sig,prior_sig,prior_common);
+post_common = get_post_common(xa,xv,prior_mu,A_sig,V_sig,prior_sig,prior_common);
 
 %combined based on CI pdf
 CI_pdf = post_common*int_pdf + (1-post_common)*seg_pdf;
