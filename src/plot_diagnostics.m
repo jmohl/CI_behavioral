@@ -1,21 +1,22 @@
-%% sandbox script for CI project
+%% diagnostic plots for individual subjects
 %
 % -------------------
 % Jeff Mohl
-% 7/30/18
+% 8/2/18
 % -------------------
 %
-% Description: for holding things that are in progress or just used to
-% satisfy temporary curiosity
+% Description: collecting diagnostic plots, currently only plotting biases
+% in auditory and visual localization for evaluation of individual subjects
 
 %% Is there a pattern of biases for auditory and visual guided saccades?
 % relying on data from the get_unimodal_est function, stored in the
 % fixed_parameters structure.
 %auditory
+function plot_diagnostics(fixed_params,subject)
 figure()
 subplot(2,1,1)
-title('Auditory localization bias')
 plot(fixed_params.A_tars,fixed_params.A_mu, 'k.')
+title('Auditory localization bias')
 hold on
 plot([-24,24], [-24,24], 'Color', [.5 .5 .5 .5])
 xlabel('True target location')
@@ -23,15 +24,17 @@ ylabel('Mean response location')
 xlim([-25,25])
 ylim([-25,25])
 subplot(2,1,2)
-title('Error by target location')
 error_vector = fixed_params.A_tars-fixed_params.A_mu';
 bar(fixed_params.A_tars,error_vector)
+title('Error by target location')
+xlabel('Tar Loc')
+ylabel('Degrees error')
 
 %visual
 figure()
 subplot(2,1,1)
-title('Visuallocalization bias')
 plot(fixed_params.V_tars,fixed_params.V_mu, 'k.')
+title('Visual localization bias')
 hold on
 plot([-35,35], [-35,35], 'Color', [.5 .5 .5 .5])
 xlabel('True target location')
@@ -39,9 +42,11 @@ ylabel('Mean response location')
 xlim([-35,35])
 ylim([-35,35])
 subplot(2,1,2)
-title('Error by target location')
 error_vector = fixed_params.V_tars-fixed_params.V_mu';
 bar(fixed_params.V_tars,error_vector)
+title('Error by target location')
+xlabel('Tar Loc')
+ylabel('Degrees error')
 
 %notes: visual bias is quite small and seems additive (everything is
 %slightly shifted left, matches what is fit in the model that includes a bias term)
@@ -69,10 +74,9 @@ legend('A mu resp', 'sigmoidal aud fit', 'unity ref line', 'Location', 'NorthWes
 xlabel('A tars')
 ylabel('A mus')
 grid on
-title('Unimodal Auditory localization bias - H02 (600tr)');
-saveas(gcf,sprintf('results\\aud_bias_fit_H01'),'png');
-
+title(sprintf('Unimodal Auditory localization bias - %s',subject));
+saveas(gcf,sprintf('results\\aud_bias_fits\\%s',subject),'png');
+end
 %notes: from this its very clear that there is a sigmoidal + additive bias
-%here. The R^2 is like .99. This was done on Juno data. I'm going to try
-%to do the same thing with human data and see how it looks.
+%here. The R^2 is like .99 on juno data
 

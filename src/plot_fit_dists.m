@@ -14,7 +14,7 @@
 % A_sig, V_sig, prior_sig: std  of same
 % prior_common: prior percent common cause
 
-function plot_fit_dists(data,A_tar,V_tar,fit_params,fixed_params,plot_points)
+function plot_fit_dists(A_endpoints, V_endpoints, AV_endpoints,A_tar,V_tar,fit_params,fixed_params,plot_points)
 
 %% extract params and data
 prior_mu = fixed_params.prior_mu;
@@ -24,18 +24,6 @@ Ac_sig = fit_params.Ac_sig; %close aud target sigma
 Af_sig = fit_params.Af_sig; %far aud target sigma
 prior_sig = fit_params.prior_sig;%sigma of centrality prior
 prior_common = fit_params.prior_common;%prior on common cause
-
-A_data = data(strcmp(data.trial_type,'A'),:);
-A_endpoints = get_response_endpoints(A_data(A_data.A_tar == A_tar,:),1,100); % require fix, 100ms buffer
-A_endpoints = A_endpoints(:,1);
-
-V_data = data(strcmp(data.trial_type,'V'),:);
-V_endpoints= get_response_endpoints(V_data(V_data.V_tar == V_tar,:),1,100); 
-V_endpoints = V_endpoints(:,1);
-
-AV_data = data(strcmp(data.trial_type,'AV'),:);
-AV_endpoints = get_response_endpoints(AV_data(AV_data.A_tar == A_tar & AV_data.V_tar == V_tar,:),1,100); % require fix, 100ms buffer
-AV_endpoints = AV_endpoints(:,1);
 
 if (abs(A_tar) > 12)
     A_sig = Af_sig;         %switch which auditory sigma is used, based on target location
@@ -95,7 +83,7 @@ subplot(4,1,4)
 hold on
 histogram(AV_endpoints,plot_points,'FaceColor','k','FaceAlpha',.25, 'Normalization','Probability')
 plot(plot_points,CI_pdf,'k')
-text(24,.2,sprintf('post common: %0.2d',post_common));
+text(24,.2,sprintf('post common: %0.2f',post_common));
 title('Full model')
 ylabel('p')
 xlabel('position (deg)')
