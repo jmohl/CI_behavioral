@@ -13,6 +13,9 @@
 % - correct for multiplicative and additive biases, based on visual (accounts
 %for improperly calibrated eye tracker)
 % - figure out if doing anything about sigmoidal aud loc bias
+% - cross validation instead of train/test datasets
+% - summarize results of cross validation for each subject
+% - plot fit parameters for examples on each subject
 
 
 %% hardcoded parameters
@@ -20,13 +23,9 @@ close all;
 local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
 CI_opts.n_pooled_days = 15; % for using monkey datasets with several days of data
 seed = 'default';
-CI_opts.make_plots = 1;
+CI_opts.make_plots = 0;
 CI_opts.correct_bias = 1;
-
-%subject
-subject = 'H01';
-%recorded date, if human
-rec_date = '2018_07_24_fixed';
+subject_list = {'Juno' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
 %adding paths
 cd(local_directory)
@@ -37,97 +36,12 @@ load('ini_params.mat')
 %fminsearch options
 fmin_options = optimset('MaxFunEvals',10000,'MaxIter',20000);
 
-
-%% load data
-if strcmp(subject,'Juno')
-    raw_data = load_pool_data(n_pooled_days,seed); %data is pooled across N randomly selected days, yielding a single tidy data table
-else
-    raw_data = load(sprintf('%s_AVD2_%s_tidy.mat',subject,rec_date)); %running on a single human data
-    raw_data=raw_data.this_tidy;
-end
-[data.AV,AV_tar_pairs] = get_endpoint_array(raw_data,'AV',1,100); %get only relevant saccade endpoints, for AV trials, used for fitting model
-[data.V,V_tars] = get_endpoint_array(raw_data,'V',1,100); %get only relevant saccade endpoints, for V trials
-[data.A,A_tars] = get_endpoint_array(raw_data,'A',1,100); %get only relevant saccade endpoints, for A trials
-fixed_params.V_tars = V_tars;
-fixed_params.A_tars = A_tars;
-
-%% correct eye tracker calibration
-if CI_opts.correct_bias
-[data.V,data.A,data.AV] = ...
-    get_bias_corrected_data(data.V,data.A,data.AV,V_tars);
+%% run model on all subjects
+for i= 1:length(subject_list)
+    subject = subject_list{i};
+    run_subject
 end
 
-%% get single modality estimates
-[fixed_params.V_mu,fixed_params.V_sig] = get_unimodal_est(data.V);
-[fixed_params.A_mu,fixed_params.A_sig] = get_unimodal_est(data.A);
-
-%% split data into train and test sets
-[AV_train,AV_test] = get_train_test(data.AV);
-
-%% fit CI model
-%sandboxing stuff, for temporary use
-%restricted_trials = AV_tar_pairs(:,1) ~= 6 & AV_tar_pairs(:,1) ~= -6;
-%
-param_vector = cell2mat(struct2cell(free_params)); %need to cast params as vector for fminsearch
-
-% run fminsearch to fit parameters
-CI_minsearch = @(free_param_vector)get_nll_CI(AV_tar_pairs,AV_train,fixed_params,free_param_vector);
-[fit_results.CI_fit,fit_results.CI_nll,~,~] = fminsearch(CI_minsearch,param_vector,fmin_options);
-
-%get nll on test dataset, using fit params
-test_nlls.CI = get_nll_CI(AV_tar_pairs,AV_test,fixed_params,fit_results.CI_fit);
-
-%put params back in structure format, for plotting using plot_fit_dists
-fit_params_CI = free_params;
-names = fieldnames(free_params);
-for i=1:length(names)
-fit_params_CI.(names{i})= fit_results.CI_fit(i);
-end
-
-%% Alternative models
-%alternative models for comparing to full CI model
-
-% fully segregated model, 4 params
-param_vector = param_vector(1:4);
-seg_minsearch = @(param_vector)get_nll_seg(AV_tar_pairs,AV_train,fixed_params,param_vector);
-[fit_results.seg_fit,fit_results.seg_nll,~,~] = fminsearch(seg_minsearch,param_vector,fmin_options);
-
-%get nll on test dataset, using fit params
-test_nlls.seg = get_nll_seg(AV_tar_pairs,AV_test,fixed_params,fit_results.seg_fit);
-
-
-% fully integrated model, 4 params
-param_vector = param_vector(1:4);
-int_minsearch = @(param_vector)get_nll_int(AV_tar_pairs,AV_train,fixed_params,param_vector);
-[fit_results.int_fit,fit_results.int_nll,~,~] = fminsearch(int_minsearch,param_vector,fmin_options);
-
-%get nll on test dataset, using fit params
-test_nlls.int = get_nll_int(AV_tar_pairs,AV_test,fixed_params,fit_results.int_fit);
-
-
-%% probability matching instead of posterior reweighted
-% todo
-
-%% CI model with target locs and sigmas determined by unimodal fits, 2 params
-% free_params_vector_fAV = free_params_vector(4:end);
-% 
-% CI_fAV_minsearch = @(free_params_vector_fAV)get_nll_CI_fixedAV(AV_tar_pairs,AV_endpoint_train,fixed_params,free_params_vector_fAV);
-% [fit_params_vector_fAV,min_nll_CI_fAV,~,~] = fminsearch(CI_fAV_minsearch,free_params_vector_fAV,options);
- 
-%notes: model does not converge, ends up with extremely large prior sig and
-%extremely low p_common indicating that these variables are adding very
-%little. expectation is that the lack of accuracy is really hurting this
-%model and the parameters are trying to account for that somehow. 
-
-%% model comparison
-n_params.CI = 5;
-n_params.seg = 4;
-n_params.int = 4;
-
-% put resultsi n table for easier viewing
-model_comp_table = get_model_comp_table(test_nlls,n_params, length(vertcat(AV_test{:})))
-save(sprintf('results\\model_comp\\mc_%s.mat',subject),'model_comp_table');
-writetable(model_comp_table,sprintf('results\\model_comp\\mc_%s.csv',subject));
 %% generate figures
 % plotting demos, this section
 if CI_opts.make_plots
