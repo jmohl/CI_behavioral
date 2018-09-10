@@ -25,26 +25,25 @@ else
     load(this_file.name);
     raw_data = tidy_data;
 end
-[data.AV,AV_tar_pairs] = get_endpoint_array(raw_data,'AV',1,100); %get only relevant saccade endpoints, for AV trials, used for fitting model
-[data.V,V_tars] = get_endpoint_array(raw_data,'V',1,100); %get only relevant saccade endpoints, for V trials
-[data.A,A_tars] = get_endpoint_array(raw_data,'A',1,100); %get only relevant saccade endpoints, for A trials
-fixed_params.V_tars = V_tars;
-fixed_params.A_tars = A_tars;
+
+raw_data.valid_endpoints = get_response_endpoints(raw_data,0,100)';
+%omit trials without valid endpoints, almost always occurs when trial was aborted
+data = raw_data(~cellfun('isempty',raw_data.valid_endpoints),:);
+
+%pull out specific locations used in this dataset
+fixed_params.V_tars = sortrows(unique(data.V_tar(~isnan(data.V_tar))));
+fixed_params.A_tars = sortrows(unique(data.A_tar(~isnan(data.A_tar))));
 
 %% correct eye tracker calibration
 if CI_opts.correct_bias
-[data.V,data.A,data.AV] = ...
-    get_bias_corrected_data(data.V,data.A,data.AV,V_tars);
+[data] = get_bias_corrected_data(data);
 end
 
-%% get single modality estimates
-[fixed_params.V_mu,fixed_params.V_sig] = get_unimodal_est(data.V);
-[fixed_params.A_mu,fixed_params.A_sig] = get_unimodal_est(data.A);
 
-%% split data into train and test sets
-[AV_train,AV_test] = get_train_test(data.AV);
+%% split data into train and test sets (todo)
+[AV_train,AV_test] = get_train_test(data.AV,'halved');
 
-%% fit CI model
+%% fit CI model (todo)
 param_vector = cell2mat(struct2cell(free_params)); %need to cast params as vector for fminsearch
 
 % run fminsearch to fit parameters
@@ -61,7 +60,7 @@ for i=1:length(names)
 fit_params_CI.(names{i})= fit_results.CI_fit(i);
 end
 
-%% Alternative models
+%% Alternative models (todo)
 %alternative models for comparing to full CI model
 
 % fully segregated model, 4 params
@@ -86,6 +85,9 @@ test_nlls.int = get_nll_int(AV_tar_pairs,AV_test,fixed_params,fit_results.int_fi
 % todo
 
 %% CI model with target locs and sigmas determined by unimodal fits, 2 params
+% get single modality estimates (todo)
+% [fixed_params.V_mu,fixed_params.V_sig] = get_unimodal_est(data.V);
+% [fixed_params.A_mu,fixed_params.A_sig] = get_unimodal_est(data.A);
 % free_params_vector_fAV = free_params_vector(4:end);
 % 
 % CI_fAV_minsearch = @(free_params_vector_fAV)get_nll_CI_fixedAV(AV_tar_pairs,AV_endpoint_train,fixed_params,free_params_vector_fAV);
@@ -96,7 +98,7 @@ test_nlls.int = get_nll_int(AV_tar_pairs,AV_test,fixed_params,fit_results.int_fi
 %little. expectation is that the lack of accuracy is really hurting this
 %model and the parameters are trying to account for that somehow. 
 
-%% model comparison
+%% model comparison (todo)
 n_params.CI = 5;
 n_params.seg = 4;
 n_params.int = 4;

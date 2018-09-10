@@ -40,6 +40,21 @@ fmin_options = optimset('MaxFunEvals',10000,'MaxIter',20000);
 for i= 1:length(subject_list)
     subject = subject_list{i};
     run_subject
+    
+    % plot distributions of saccades as well as predicted distributions under CI model fit 
+    set(0,'DefaultFigureVisible','off');
+    plot_dir = sprintf('results\\fit_dists\\%s',subject);
+    mkdir(plot_dir);
+    for j = 1:size(AV_tar_pairs,1)
+        A_tar = AV_tar_pairs(j,1);
+        V_tar =  AV_tar_pairs(j,2);
+        this_A_data = data.A{A_tars == A_tar};
+        this_V_data = data.V{V_tars == V_tar};
+        this_AV_data = data.AV{j};
+        plot_fit_dists(this_A_data,this_V_data,this_AV_data,A_tar,V_tar,fit_params_CI,fixed_params,-40:40);
+        saveas(gcf,sprintf('%s\\%s%dA%dV',plot_dir,subject,A_tar,V_tar),'png')
+    end
+    set(0,'DefaultFigureVisible','on');
 end
 
 %% generate figures
