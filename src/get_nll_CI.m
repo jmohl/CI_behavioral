@@ -9,10 +9,11 @@
 % under the causal inference model.This code is adapted from get_nll_CI4 in
 % the workspace code.
 
-function n_loglikelihood = get_nll_CI(tar_pairs,endpoint_data,fixed_params,free_params)
+function n_loglikelihood = get_nll_CI(endpoint_data,fixed_params,free_params)
 
 %% extracting parameters for more readable code
 prior_mu = fixed_params.prior_mu;
+tar_pairs = fixed_params.AV_pairs;
 
 V_sig = free_params(1);%.V_sig; %vis target sigma
 Ac_sig = free_params(2);%.Ac_sig; %close aud target sigma
