@@ -2,17 +2,14 @@
 %
 % -------------------
 % Jeff Mohl
-% 9/12/18
+% 5/30/18
 % -------------------
 %
 % Description: this function will calculate the negative log likelihood
 % under the causal inference model.This code is adapted from get_nll_CI4 in
 % the workspace code.
-%
-% Updated 9/12/18 to work using tidy_data structure instead of cell arrays,
-% made it much much slower.
 
-function n_loglikelihood = get_nll_CI(data,fixed_params,free_params)
+function n_loglikelihood = get_nll_CI(tar_pairs,endpoint_data,fixed_params,free_params)
 
 %% extracting parameters for more readable code
 prior_mu = fixed_params.prior_mu;
@@ -28,17 +25,13 @@ if prior_common > 1 || prior_common < 0 %can't have probability above 1 or below
     return
 end
 
-AV_pairs = fixed_params.AV_pairs;
 %% Calculate nll for each target pair and sum
-data = data(strcmp(data.trial_type,'AV'),:); %only using combined trials
 
-nll_array = zeros(height(data),1);
-for this_pair = 1:length(AV_pairs)
-    A_tar = AV_pairs(this_pair,1);
-    V_tar = AV_pairs(this_pair,2);
-    this_data = data(data.A_tar == A_tar & data.V_tar == V_tar,:);
-    endpoints = vertcat(this_data.valid_endpoints{:,1});
-    endpoints = endpoints(:,1); %only taking x coord of endpoints, first column
+nll_array = zeros(length(tar_pairs),1);
+for i = 1:length(tar_pairs)
+    A_tar = tar_pairs(i,1);
+    V_tar = tar_pairs(i,2);
+    endpoints = endpoint_data{i};
     
     if (abs(A_tar) > 12)
         A_sig = Af_sig;         %switch which auditory sigma is used, based on target location
@@ -46,10 +39,11 @@ for this_pair = 1:length(AV_pairs)
         A_sig = Ac_sig;
     end
     
-    % for this model, xa and xv are assumed to be centered on the true
-    % target location. An option would be to have these be centered on the
-    % unimodal distributions but that has resulted in some model
-    % instability
+    % currently xa and xv are assumed to be the true target location,
+    % however this might change in the future if I decide to use the mean
+    % of the reported location instead. this also might be incorrect, and
+    % could be a sample taken from the mean instead? Could also make these
+    % a free parameter to allow for bias.
     xa = A_tar;
     xv = V_tar;
     
@@ -67,7 +61,7 @@ for this_pair = 1:length(AV_pairs)
     CI_pdf = post_common*int_pdf + (1-post_common)*seg_pdf;
     
     %calculate likelihood for observed saccades in this data
-    nll_array(this_pair) = -1*sum(log(CI_pdf));
+    nll_array(i) = -1*sum(log(CI_pdf));
 end
 
 n_loglikelihood = sum(nll_array); %summing over all condition types.

@@ -18,6 +18,7 @@
 
 
 %% split data into train and test sets
+
 function [train_inds, test_inds]=get_train_test(data,k)
     test_inds = zeros(k,height(data));
         for i = 1:k
