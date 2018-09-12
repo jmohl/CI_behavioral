@@ -25,7 +25,7 @@ CI_opts.n_pooled_days = 15; % for using monkey datasets with several days of dat
 seed = 'default';
 CI_opts.make_plots = 0;
 CI_opts.correct_bias = 1;
-CI_opts.k_folds = 2;
+CI_opts.k_folds = 10;
 
 subject_list = {'Juno' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 

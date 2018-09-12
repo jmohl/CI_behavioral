@@ -41,23 +41,18 @@ if CI_opts.correct_bias
 end
 
 %% split data into train and test sets
-[train_data,test_data] = get_train_test(data,CI_opts.k_folds);
-%tables are very slow, so going to make a simplified data structure for
-%fitting where each 
-
+[train_inds,test_inds] = get_train_test(data,CI_opts.k_folds);
 
 %% fit CI model (todo)
 param_vector = cell2mat(struct2cell(free_params)); %need to cast params as vector for fminsearch
 
 % run fminsearch to fit parameters
 for this_fold = 1:CI_opts.k_folds
-    tic()
-CI_minsearch = @(free_param_vector)get_nll_CI(AV_pairs,,fixed_params,free_param_vector);
+CI_minsearch = @(free_param_vector)get_nll_CI(data(train_inds(this_fold,:),:),fixed_params,free_param_vector);
 [fit_results.CI_fit,fit_results.CI_nll,~,~] = fminsearch(CI_minsearch,param_vector,fmin_options);
 
 %get nll on test dataset, using fit params
 test_nlls.CI(this_fold) = get_nll_CI(data(train_inds(this_fold,:),:),fixed_params,fit_results.CI_fit);
-toc()
 end
 %put params back in structure format, for plotting using plot_fit_dists
 % fit_params_CI = free_params;
