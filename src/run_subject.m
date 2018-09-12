@@ -39,8 +39,9 @@ if CI_opts.correct_bias
 [data] = get_bias_corrected_data(data);
 end
 
-%% split data into train and test sets
-[train_inds,test_inds] = get_train_test(data,10);
+
+%% split data into train and test sets (todo)
+[AV_train,AV_test] = get_train_test(data.AV,'halved');
 
 %% fit CI model (todo)
 param_vector = cell2mat(struct2cell(free_params)); %need to cast params as vector for fminsearch
