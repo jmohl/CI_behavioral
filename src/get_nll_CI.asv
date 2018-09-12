@@ -33,12 +33,11 @@ AV_pairs = fixed_params.AV_pairs;
 data = data(strcmp(data.trial_type,'AV'),:); %only using combined trials
 
 nll_array = zeros(height(data),1);
-for this_pair = 1:length(AV_pairs)
-    A_tar = AV_pairs(this_pair,1);
-    V_tar = AV_pairs(this_pair,2);
+for i = 1:length(AV_pairs)
+    A_tar = AV_pairs(i,1);
+    V_tar = AV_pairs(i,2);
     this_data = data(data.A_tar == A_tar & data.V_tar == V_tar,:);
-    endpoints = vertcat(this_data.valid_endpoints{:,1});
-    endpoints = endpoints(:,1); %only taking x coord of endpoints, first column
+    endpoints = vertcat(this_data.valid_endpoints{}); %only taking x coord of endpoints, first column
     
     if (abs(A_tar) > 12)
         A_sig = Af_sig;         %switch which auditory sigma is used, based on target location
@@ -67,7 +66,7 @@ for this_pair = 1:length(AV_pairs)
     CI_pdf = post_common*int_pdf + (1-post_common)*seg_pdf;
     
     %calculate likelihood for observed saccades in this data
-    nll_array(this_pair) = -1*sum(log(CI_pdf));
+    nll_array(i) = -1*sum(log(CI_pdf));
 end
 
 n_loglikelihood = sum(nll_array); %summing over all condition types.
