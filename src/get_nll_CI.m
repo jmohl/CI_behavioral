@@ -12,8 +12,8 @@
 % Updated 9/12/18 to work using tidy_data structure instead of cell arrays,
 % made it much much slower.
 
-function n_loglikelihood = get_nll_CI(data,fixed_params,free_params)
-
+function n_loglikelihood = get_nll_CI(AV_pairs,fixed_params,free_params)
+profile on
 %% extracting parameters for more readable code
 prior_mu = fixed_params.prior_mu;
 
@@ -28,10 +28,7 @@ if prior_common > 1 || prior_common < 0 %can't have probability above 1 or below
     return
 end
 
-AV_pairs = fixed_params.AV_pairs;
 %% Calculate nll for each target pair and sum
-data = data(strcmp(data.trial_type,'AV'),:); %only using combined trials
-
 nll_array = zeros(height(data),1);
 for this_pair = 1:length(AV_pairs)
     A_tar = AV_pairs(this_pair,1);
@@ -71,3 +68,4 @@ for this_pair = 1:length(AV_pairs)
 end
 
 n_loglikelihood = sum(nll_array); %summing over all condition types.
+profile viewer
