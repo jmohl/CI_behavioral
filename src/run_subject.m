@@ -35,6 +35,15 @@ fixed_params.V_tars = sortrows(unique(data.V_tar(~isnan(data.V_tar))));
 fixed_params.A_tars = sortrows(unique(data.A_tar(~isnan(data.A_tar))));
 fixed_params.AV_pairs = sortrows(unique([data.A_tar(~isnan(data.V_tar)& ~isnan(data.A_tar)),data.V_tar(~isnan(data.V_tar)&~isnan(data.A_tar))],'rows'));
 
+%need to cast params as vector for fminsearch
+param_vector = cell2mat(struct2cell(free_params)); 
+
+%fit parameters table, for storing results
+fit_params = zeros(4,5);
+fit_params(1,:) = param_vector';
+
+
+
 %% correct eye tracker calibration
 if CI_opts.correct_bias
 [data] = get_bias_corrected_data(data);
@@ -44,7 +53,6 @@ end
 [AV_train,AV_test] = get_train_test(data,CI_opts.k_folds,fixed_params.AV_pairs);
 
 %% fit CI model
-param_vector = cell2mat(struct2cell(free_params)); %need to cast params as vector for fminsearch
 
 % run fminsearch to fit parameters
 for this_fold = 1:CI_opts.k_folds
@@ -55,11 +63,9 @@ CI_minsearch = @(free_param_vector)get_nll_CI(AV_train(this_fold,:),fixed_params
 test_nlls.CI(this_fold) = get_nll_CI(AV_test(this_fold,:),fixed_params,fit_results.CI_fit(this_fold,:));
 end
 
-fit_params_CI = free_params;
-names = fieldnames(free_params);
-for i=1:length(names)
-fit_params_CI.(names{i})= mean(fit_results.CI_fit(:,i));
-end
+%saving out average fit params for plotting later
+fit_params(2,:) = mean(fit_results.CI_fit(:,:));
+
 %% Alternative models
 %alternative models for comparing to full CI model
 
@@ -72,7 +78,6 @@ seg_minsearch = @(param_vector)get_nll_seg(AV_train(this_fold,:),fixed_params,pa
 %get nll on test dataset, using fit params
 test_nlls.seg(this_fold) = get_nll_seg(AV_test(this_fold,:),fixed_params,fit_results.seg_fit);
 
-
 % fully integrated model, 4 params
 param_vector = param_vector(1:4);
 int_minsearch = @(param_vector)get_nll_int(AV_train(this_fold,:),fixed_params,param_vector);
@@ -80,7 +85,11 @@ int_minsearch = @(param_vector)get_nll_int(AV_train(this_fold,:),fixed_params,pa
 
 %get nll on test dataset, using fit params
 test_nlls.int(this_fold) = get_nll_int(AV_test(this_fold,:),fixed_params,fit_results.int_fit);
+
 end
+fit_params(3,1:4) = mean(fit_results.seg_fit(:,:));
+fit_params(4,1:4) = mean(fit_results.int_fit(:,:));
+
 
 %% probability matching instead of posterior reweighted
 % todo
@@ -99,6 +108,16 @@ end
 %little. expectation is that the lack of accuracy is really hurting this
 %model and the parameters are trying to account for that somehow. 
 
+%% convert fit results to table
+fit_params = array2table(fit_params);
+fit_params.Properties.VariableNames = fieldnames(free_params);
+fit_params.Properties.RowNames = {'initial', 'CI', 'Seg','Int'};
+try 
+    mkdir('results\fit_params')
+end
+save(sprintf('results\\fit_params\\fit_params_%s.mat',subject),'fit_params');
+
+
 %% model comparison
 n_params.CI = 5;
 n_params.seg = 4;
@@ -106,7 +125,7 @@ n_params.int = 4;
 
 % put results in table for easier viewing
 subject
-model_comp_table = get_model_comp_table(test_nlls,n_params,length(vertcat(AV_test{:})))
+model_comp_table = get_model_comp_table(test_nlls,n_params,length(vertcat(AV_test{:}))) %n obs = total number of valid saccades in dual trials
 save(sprintf('results\\model_comp\\mc_%s.mat',subject),'model_comp_table');
 writetable(model_comp_table,sprintf('results\\model_comp\\mc_%s.csv',subject));
 
