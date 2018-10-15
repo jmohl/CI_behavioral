@@ -17,15 +17,7 @@
 %todo: put this in function form to reduce workspace clutter
 
 
-%% load data
-if strcmp(subject,'Juno')
-    raw_data = load_pool_data(CI_opts.n_pooled_days,seed); %data is pooled across N randomly selected days, yielding a single tidy data table
-else
-    this_file = dir(sprintf('data\\*%s*',subject));
-    load(this_file.name);
-    raw_data = tidy_data;
-end
-
+%% update data
 raw_data.valid_endpoints = get_response_endpoints(raw_data,0,100)';
 %omit trials without valid endpoints, almost always occurs when trial was aborted
 data = raw_data(~cellfun('isempty',raw_data.valid_endpoints),:);

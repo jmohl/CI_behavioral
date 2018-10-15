@@ -13,12 +13,15 @@
 %% hardcoded parameters
 close all;
 local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
-CI_opts.n_pooled_days = 15; % for using monkey datasets with several days of data
+CI_opts.n_pooled_days = 10; % for using monkey datasets with several days of data
 seed = 'default';
-CI_opts.make_plots = 0;
+CI_opts.make_plots = 1;
 CI_opts.correct_bias = 1;
 CI_opts.k_folds = 10; 
 subject_list = {'Juno' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+
+%todo:fix this
+run_days_separately =1;
 
 %adding paths
 cd(local_directory)
@@ -32,8 +35,26 @@ fmin_options = optimset('MaxFunEvals',20000,'MaxIter',40000);
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};
-    run_subject
-    
+    % load data
+    if strcmp(subject,'Juno')
+        raw_data = load_pool_data(CI_opts.n_pooled_days,seed); %data is pooled across N randomly selected days, yielding a single tidy data table
+    else
+        this_file = dir(sprintf('data\\*%s*',subject));
+        load(this_file.name);
+        raw_data = tidy_data;
+    end
+    %TODO: fix this deadline inspired hack
+    if run_days_separately
+        comb_data = raw_data;
+        days_list = unique(raw_data.file_ID);
+        for this_day=1:length(days_list)
+            raw_data = comb_data(strcmp(comb_data.file_ID, days_list{this_day}),:);
+            subject = days_list{this_day};
+            run_subject
+        end
+    else
+        run_subject
+    end
     %plot distributions of saccades as well as predicted distributions under CI model fit 
     if CI_opts.make_plots
     set(0,'DefaultFigureVisible','off');

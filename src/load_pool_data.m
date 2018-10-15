@@ -11,7 +11,7 @@
 
 function data = load_pool_data(n_pooled_days,seed)
 
-data_dir = dir(['data' '/Juno*.mat']);
+data_dir = dir(['data' '/Juno*AVD2*2018*.mat']);
 
 if nargin == 2
     rng(seed) %set seed if given
