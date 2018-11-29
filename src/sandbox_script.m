@@ -30,7 +30,7 @@ bar(fixed_params.A_tars,error_vector)
 %visual
 figure()
 subplot(2,1,1)
-title('Visuallocalization bias')
+title('Visual localization bias')
 plot(fixed_params.V_tars,fixed_params.V_mu, 'k.')
 hold on
 plot([-35,35], [-35,35], 'Color', [.5 .5 .5 .5])
@@ -76,3 +76,39 @@ saveas(gcf,sprintf('results\\aud_bias_fit_H01'),'png');
 %here. The R^2 is like .99. This was done on Juno data. I'm going to try
 %to do the same thing with human data and see how it looks.
 
+%% get posterior on common cause for all conditions, compare with number of saccades
+
+post_common = [];
+
+for j = 1:size(fixed_params.AV_pairs,1)
+    A_tar = fixed_params.AV_pairs(j,1);
+    V_tar =  fixed_params.AV_pairs(j,2);
+    %fit parameters
+    prior_mu = fixed_params.prior_mu;
+    V_sig = fit_params('CI',:).V_sig; %vis target sigma
+    Ac_sig = fit_params('CI',:).Ac_sig; %close aud target sigma
+    Af_sig = fit_params('CI',:).Af_sig; %far aud target sigma
+    prior_sig = fit_params('CI',:).prior_sig;%sigma of centrality prior
+    prior_common = fit_params('CI',:).prior_common;%prior on common cause
+    if (abs(A_tar) > 12)
+        A_sig = Af_sig;         %switch which auditory sigma is used, based on target location
+    else
+        A_sig = Ac_sig;
+    end
+    post_common(j,:) = [get_post_common(A_tar,V_tar,prior_mu,A_sig,V_sig,prior_sig,prior_common), A_tar,V_tar];
+end
+
+tar_sep = abs(post_common(:,2) - post_common(:,3));
+
+figure(1);
+boxplot(post_common(:,1),tar_sep)
+hold on
+
+comb_data.tar_sep = abs(comb_data.A_tar - comb_data.V_tar);
+
+good_trials_only = comb_data(strcmp(comb_data.trial_type, 'AV') & ~isnan(comb_data.go_time),:);
+[g,av] = findgroups(good_trials_only.tar_sep);
+
+all_sums = splitapply(@sum,good_trials_only.n_sacs == 1,g);
+all_lengths = splitapply(@length,good_trials_only.trial,g);
+ratios = all_sums./all_lengths;

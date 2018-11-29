@@ -9,9 +9,10 @@
 % (randomly selected, with the option for a seed) and concatenate them into
 % a single data table.
 
-function data = load_pool_data(n_pooled_days,seed)
+function data = load_pool_data(n_pooled_days,subject,seed)
 
-data_dir = dir(['data' '/Juno*AVD2*2018*.mat']);
+file_name = sprintf('/%s*AVD2*2018*.mat',subject);
+data_dir = dir(['data' file_name]);
 
 if nargin == 2
     rng(seed) %set seed if given

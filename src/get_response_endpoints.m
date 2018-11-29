@@ -37,13 +37,14 @@ end
 
 for i=1:height(data)
     this_endpoints = data.sac_endpoints{i}; %for saccade data
+    this_sac_interval = data.sac_intervals{i};
     if ~isempty(this_endpoints)
-        interval_inds = this_endpoints(:,3) > data.go_time(i) & this_endpoints(:,3) < (data.end_time(i) + buffer_time); %note that endpoints(:,3) contains the time point for the end of the saccade
+        interval_inds = this_sac_interval(:,2) > data.go_time(i) & this_sac_interval(:,2) < (data.end_time(i) + buffer_time); %note that endpoints(:,2) contains the endpoint time of the saccade
         %for auditory and visual saccades, only count first saccade
         if strcmp(data.trial_type(i),'A') | strcmp(data.trial_type(i),'V')
-            endpoints{i} = this_endpoints(find(interval_inds,1,'first'),1:3);
+            endpoints{i} = this_endpoints(find(interval_inds,1,'first'),1:2);
         else
-            endpoints{i} = this_endpoints(interval_inds,1:3);
+            endpoints{i} = this_endpoints(interval_inds,1:2);
         end
     else
         endpoints{i} = [];
