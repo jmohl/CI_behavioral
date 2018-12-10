@@ -24,28 +24,6 @@ load('ini_params.mat')
 %fminsearch options
 fmin_options = optimset('MaxFunEvals',20000,'MaxIter',40000);
 
-%% getting code working to plot % single saccade for each condition, or by
-% target separation
-
-
-AV_data = data(strcmp(data.trial_type, 'AV'),:);
-sac_array = AV_data(:,{'A_tar','V_tar','n_sacs'});
-sac_array.disp = sac_array.A_tar - sac_array.V_tar;
-[g, pairs] = findgroups(sac_array(:,1:2));
-p_single = [];
-for i=1:20
-    p_single(i) = sum(sac_array.n_sacs(g==i) == 1)/length(sac_array.n_sacs(g==i));%percent single saccade
-end
-results_array = pairs;
-results_array.psingle = p_single';
-results_array.disp = results_array.A_tar - results_array.V_tar;
-% make plot
-plot(abs(results_array.disp),results_array.psingle,'k.');
-ylabel('percent single saccade')
-xlabel('target separation')
-
-% do this for each subject to get error bars
-
 %% Is there a pattern of biases for auditory and visual guided saccades?
 % relying on data from the get_unimodal_est function, stored in the
 % fixed_parameters structure.

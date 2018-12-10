@@ -55,7 +55,9 @@ for i= 1:length(subject_list)
     else
         run_subject
     end
-    %plot distributions of saccades as well as predicted distributions under CI model fit 
+    %plot distributions of saccades as well as predicted distributions under CI model fit
+    % todo: should make this load the parameters from saved files, instead
+    % of using the ones in the workspace while fitting the model.
     if CI_opts.make_plots
         plot_diagnostics(fixed_params,data,subject)
         set(0,'DefaultFigureVisible','off');
