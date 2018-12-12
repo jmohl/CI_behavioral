@@ -15,20 +15,25 @@ seed = 'default';
 CI_opts.make_plots = 1;
 CI_opts.correct_bias = 1;
 CI_opts.k_folds = 10;
-subject_list = {'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+human_list = {'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+subject_list = human_list;
 
-addpath('src','results','data')
+addpath('src','results','data','results\fit_params')
 run_days_separately = 1;
 
 if run_days_separately
-   file_name = sprintf('/Juno*AVD2*2018*.mat');
-   data_dir = dir(['data' file_name]);
-    rand_days = randsample(length(data_dir),CI_opts.n_pooled_days);
-    subject_list = [subject_list,{data_dir(rand_days).name}];
+   file_name = sprintf('/*Juno*AVD2*2018*.mat');
+   %get the days for which I have saved parameters
+   data_dir = dir(['results/fit_params' file_name]);
+   for ii = 1:length(data_dir)-1 %removing the weird outlier day, which is the last one
+    juno_list{ii} = sprintf('%s_tidy.mat',data_dir(ii).name(strfind(data_dir(ii).name,'Juno'):end-4));
+   end
+   subject_list = [subject_list,juno_list];
+    
    file_name = sprintf('/Yoko*AVD2*2018*.mat');
    data_dir = dir(['data' file_name]);
-    rand_days = randsample(length(data_dir),CI_opts.n_pooled_days);
-    subject_list = [subject_list,{data_dir(rand_days).name}];
+        rand_days = randsample(length(data_dir),CI_opts.n_pooled_days);
+        subject_list = [subject_list,{data_dir(rand_days).name}];
 else
     subject_list = [subject_list,{'Yoko','Juno'}];
 
@@ -114,6 +119,28 @@ ylabel('percent single saccade')
 xlabel('degrees of target separation (vis from aud)')
 saveas(gcf,'results\behavior\Juno_psing','png')
 
+% make plots again, this time splitting by aud location
+[jg,nvp] = findgroups(juno_pss(:,{'disp' 'A_tar'}));
+
+h_means = splitapply(@mean,juno_pss.psingle,jg);
+h_std = splitapply(@std, juno_pss.psingle,jg);
+h_len = splitapply(@length,juno_pss.psingle,jg);
+h_sem = h_std./sqrt(h_len);
+figure(22)
+hold on
+A_tars = unique(nvp.A_tar);
+for ii = 1:length(A_tars)
+    this_tar = nvp.A_tar == A_tars(ii);
+errorbar(nvp(this_tar,:).disp,h_means(this_tar),h_sem(this_tar),'LineWidth',2)
+
+end
+legend('-24','-6','6','24')
+title('Single saccade ratio by target separation - Juno')
+ylabel('percent single saccade')
+xlabel('degrees of target separation (vis from aud)')
+saveas(gcf,'results\behavior\Juno_psing_split','png')
+
+
 %make plots for yoko
 [yg,nvp] = findgroups(yoko_pss(:,'disp'));
 
@@ -128,18 +155,56 @@ title('Single saccade ratio by target separation - Yoko')
 ylabel('percent single saccade')
 xlabel('degrees of target separation (vis from aud)')
 saveas(gcf,'results\behavior\Yoko_psing','png')
+
+% make plots again, this time splitting by aud location
+[yg,nvp] = findgroups(yoko_pss(:,{'disp' 'A_tar'}));
+
+h_means = splitapply(@mean,yoko_pss.psingle,yg);
+h_std = splitapply(@std, yoko_pss.psingle,yg);
+h_len = splitapply(@length,yoko_pss.psingle,yg);
+h_sem = h_std./sqrt(h_len);
+figure(33)
+hold on
+A_tars = unique(nvp.A_tar);
+for ii = 1:length(A_tars)
+    this_tar = nvp.A_tar == A_tars(ii);
+errorbar(nvp(this_tar,:).disp,h_means(this_tar),h_sem(this_tar),'LineWidth',2)
+
+end
+legend('-24','-6','6','24')
+title('Single saccade ratio by target separation - yoko')
+ylabel('percent single saccade')
+xlabel('degrees of target separation (vis from aud)')
+saveas(gcf,'results\behavior\Yuno_psing_split','png')
 %% Get parameter values for each saved subject
-%todo
+%get juno params
+for ii = 1:length(juno_list)
+    this_params = load(sprintf('fit_params_%s.mat',juno_list{ii}(1:end-9)));
+    this_params = this_params.fit_params;
+    j_params(ii,:) = this_params('CI',:);
+end
+
+%get median param values, because outliers
+med_j_params = median(j_params{:,:});
+
+for ii = 1:length(human_list)
+    this_params = load(sprintf('fit_params_%s',human_list{ii}));
+    this_params = this_params.fit_params;
+    h_params(ii,:) = this_params('CI',:);
+end
+
+med_h_params = median(h_params{:,:});
+
+
 
 %% plot posterior on p_common vs actual for different subjects
 % just going to do this for Juno right now
-addpath('results\fit_params')
-fit_params_J = load('fit_params_Juno.mat');
-fit_params_J=fit_params_J.fit_params;
-A_sig = mean([fit_params_J.Ac_sig('CI'),fit_params_J.Af_sig('CI')]);
-V_sig =fit_params_J.V_sig('CI');
-prior_sig = fit_params_J.prior_sig('CI');
-p_common = fit_params_J.prior_common('CI');
+
+
+A_sig = mean(med_j_params(2:3));
+V_sig = med_j_params(1);
+prior_sig = med_j_params(4);
+p_common = med_j_params(5);
 % make array of predicted post common
 
 pred_post_common = perc_sing_sac(1:20,[1:2 4]);%lil hacky
@@ -155,14 +220,15 @@ figure(2)
 hold on
 
 plot(g_disp.disp,pred_means,'k')
-%% values were a little weird for juno, going to try again with humans
+legend('Actual','posterior')
 
-fit_params_08 = load('fit_params_H08.mat');% todo, use mean parameters across subjects instead of just one subject
-fit_params_08=fit_params_08.fit_params;
-A_sig = mean([fit_params_08.Ac_sig('CI'),fit_params_08.Af_sig('CI')]);
-V_sig =fit_params_08.V_sig('CI');
-prior_sig = fit_params_08.prior_sig('CI');
-p_common = fit_params_08.prior_common('CI');
+saveas(gcf,'results\behavior\Juno_psing_modeled','png');
+%% do again with humans
+
+A_sig = mean(med_h_params(2:3));
+V_sig =med_h_params(1);
+prior_sig = med_h_params(4);
+p_common = med_h_params(5);
 % make array of predicted post common
 pred_post_common = perc_sing_sac(1:20,[1:2 4]);%lil hacky
 pred_post_common.pred = zeros(1,20)';
@@ -178,5 +244,6 @@ figure(1)
 hold on
 
 plot(g_disp.disp,pred_means,'k')
-legend('Actual data','posterior on common cause')
+legend('Actual','posterior')
+saveas(gcf,'results\behavior\Human_psing_modeled','png');
 
