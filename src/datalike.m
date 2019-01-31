@@ -11,7 +11,9 @@
 %
 % Inputs:
 % data(1) trial number
-% data(2) task modality 
+% data(2) A tar
+% data(3) V tar
+% data(4) response (number of saccades for unity judgement case)
 % model name of model being used(?)
 %
 %
@@ -32,23 +34,30 @@ data(data(:,4)>1,4) = 2;
 
 %setting test parameters
 theta = [5,5,5,.5,.1]; %v_sig, A_sig, prior_sig, prior_common, lambda (lapse rate)
-MAXRNG = 45;
-realmin = 0.00001;
+%realmin = 0.0000000001;
 
 %% start of actual likelihood fitting code
+function ll = datalike(data,theta)
+
+%hard coded vars, change later most likely.
+debug = 1;
+MAXRNG = 45;
+
 
 V_sig = theta(1);%.V_sig; %vis target sigma
 A_sig = theta(2);%.A_sig; %close aud target sigma
 prior_sig = theta(3);%.prior_sig;%sigma of centrality prior
 p_common = theta(4);%.prior_common;%prior on common cause
-lamba = theta(5); %lapse probability
+lambda = theta(5); %lapse probability
 
 xrange = -60:.5:60; %range for calculating likelihoods.
-xrange_V = xrange;
-xrange_A = xrange';
+xrange_V(1,:,1) = xrange;
+xrange_A(1,1,:) = xrange';
 
 % get condition vectors
 conds = unique(data(:,2:3),'rows');
+conds_A = conds(:,1);
+conds_V = conds(:,2);
 respbins = unique(data(:,4));
 
 % get reponse for each condition (1 column single counts, 1 double
@@ -72,7 +81,7 @@ int_V = (bsxfun_normcdf(MAXRNG,muc2_V,sigmac2_V) - bsxfun_normcdf(-MAXRNG,muc2_V
 int_A = (bsxfun_normcdf(MAXRNG,muc2_A,sigmac2_A) - bsxfun_normcdf(-MAXRNG,muc2_A,sigmac2_A));
 int_V = int_V .* bsxfun_normpdf(xrange_V,0,sqrt(V_sig^2 + prior_sig^2));
 int_A = int_A .* bsxfun_normpdf(xrange_A,0,sqrt(A_sig^2 + prior_sig^2));
-likec2 = bsxfun(@times, int_V, int_A) + realmin;
+likec2 = bsxfun(@times, int_V, int_A);
 
 % calculate the C=1 PDF
 %NOTE: this code is adapted from lines 399:410 in
@@ -83,17 +92,58 @@ mucdf = mutilde.*prior_sig^2./(sigma2tilde + prior_sig^2);
 sigmacdf = sqrt(sigma2tilde./(sigma2tilde + prior_sig^2))*prior_sig;
 intc1 = (bsxfun_normcdf(MAXRNG, mucdf, sigmacdf) - bsxfun_normcdf(-MAXRNG, mucdf, sigmacdf));
 likec1 = intc1 .* bsxfun_normpdf(xrange_A,xrange_V,sqrt(A_sig^2 + V_sig^2)) .* ...
-    bsxfun_normpdf(mutilde,0,sqrt(sigma2tilde +prior_sig^2)) + realmin;
+    bsxfun_normpdf(mutilde,0,sqrt(sigma2tilde +prior_sig^2));
 
 % get posterior for (C=1|xv,xa)
-c1post = (c1like * p_common)/(c1like * p_common + (1-p_common)*c2like);
+c1post = (likec1 * p_common)./(likec1 * p_common + (1-p_common)*likec2);
+
+%judgement rule, if post > 0.5, choose unity
+w1_unity = zeros(size(c1post));
+w1_unity(c1post > 0.5) = 1;
+w1_unity(c1post == 0.5) = 0.5;
+
+%plots for debugging
+if debug
+    figure;imagesc(squeeze(c1post));
+    figure;imagesc(squeeze(w1_unity));
+end
 
 %integrate over xa xv values for every condition in condition vector
-% try both using qtrapz and VestBMS_finalqtrapz
+% try both using qtrapz and VestBMS_finalqtrapz. Again adapted from acerbi
+xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
+xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volume element
+
+xpdf_A = bsxfun_normpdf(xrange_A, conds_A, A_sig);
+xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 3));  % Not multiplying by volume element(JM?)
+prmat_unity = zeros(numel(conds_V), 2);
+%prmat_unity(:,1) = VestBMS_finalqtrapz(xpdf_V,xpdf_A,w1_unity);    % Not multiplying by volume element (xpdfs did not)
+prmat_unity(:,1) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), w1_unity), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C. 
+prmat_unity(:,2) = 1 - prmat_unity(:,1);
 
 % Fix probabilities
-prmat = min(max(prmat,0),1); %JM p cant be greater than 1 or smaller than 0.
+%JM p cant be greater than 1 or smaller than 0.
 prmat_unity = min(max(prmat_unity,0),1);
 
+%add in change for random response
+prmat_unity = lambda/2 + (1-lambda)*prmat_unity;
+if debug
+   %plot decision rule by target sep, for rough comparison with data (will
+   %actually depend on eccentricity as well (which is why I'm plotting
+   %dots, there will be a few dots for each sep value
+   tar_sep = abs(conds_V - conds_A);
+   figure;plot(tar_sep,prmat_unity(:,1),'k.')
+   g=findgroups(tar_sep);
+   sep_means = splitapply(@mean,prmat_unity(:,1),g);
+   hold on; plot(unique(tar_sep),sep_means);
+   legend('individual pairs','mean by sep')
+   title('p single by sep, predicted by model')
+   xlabel('degrees of separation')
+   ylabel('p single saccade response')
+end
+
 % calculate log likelihood of data
-ll = sum(resp.*log(prmat_unity));
+ll = sum(responses.*log(prmat_unity));
+
+
+
+end
