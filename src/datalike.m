@@ -14,35 +14,15 @@
 % data(2) A tar
 % data(3) V tar
 % data(4) response (number of saccades for unity judgement case)
-% model name of model being used(?)
+% theta - contains model fit parameters  
+% model (?) todo
 %
-%
-
-%% hack code for starting this process
-
-data = load('H08_AVD2_2018_08_10_tidy.mat');
-data= data.tidy_data;
-%get only AV trials
-data = data(strcmp(data.trial_type,'AV') & ~isnan(data.go_time),:);
-%convert into limited table
-data = data(:,[2,4,5,16]); %tr num, Atar, Vtar, nsaccades
-data = table2array(data);
-%currently dealing with more than 1 saccade by saying it is just 2. this
-%might change in the future but I need to carefully look at some of the
-%nsac code in tidy_data project to see what to do about it 
-data(data(:,4)>1,4) = 2;
-
-%setting test parameters
-theta = [5,5,5,.5,.1]; %v_sig, A_sig, prior_sig, prior_common, lambda (lapse rate)
-%realmin = 0.0000000001;
 
 %% start of actual likelihood fitting code
-function ll = datalike(data,theta)
+function [nll,prmat_unity] = datalike(data,theta)
 
-%hard coded vars, change later most likely.
-debug = 1;
-MAXRNG = 45;
-
+global MAXRNG
+debug = 0;
 
 V_sig = theta(1);%.V_sig; %vis target sigma
 A_sig = theta(2);%.A_sig; %close aud target sigma
@@ -50,7 +30,16 @@ prior_sig = theta(3);%.prior_sig;%sigma of centrality prior
 p_common = theta(4);%.prior_common;%prior on common cause
 lambda = theta(5); %lapse probability
 
-xrange = -60:.5:60; %range for calculating likelihoods.
+%HACK fminsearch does not allow bounds, so I'm including this really hacky
+%way to require that the likelihood is not calculated for impossible
+%values. This will not be necessary when I switch to using either bads or
+%fminsearchbnd, both of which are third party.
+if min(theta(1:3)) <= 0.5 || p_common > 1 || p_common < 0 
+    nll = 10000;
+    return;
+end
+
+xrange = linspace(-60,60,250); %range for calculating likelihoods.
 xrange_V(1,:,1) = xrange;
 xrange_A(1,1,:) = xrange';
 
@@ -141,9 +130,9 @@ if debug
    ylabel('p single saccade response')
 end
 
-% calculate log likelihood of data
-ll = sum(responses.*log(prmat_unity));
-
+% calculate negative log likelihood of data
+nll = -1*sum(responses.*log(prmat_unity));
+nll = sum(nll); %sum across bins
 
 
 end
