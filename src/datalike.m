@@ -15,11 +15,11 @@
 % data(3) V tar
 % data(4) response (number of saccades for unity judgement case)
 % theta - contains model fit parameters  
-% model (?) todo
-%
+% model(1) Model type (1=Bayesian, 2=null, 3=switching)
+% model(2) Response type (1=unity judgement, 2 = location)
 
-%% start of actual likelihood fitting code
-function [nll,prmat_unity] = datalike(data,theta)
+%% start of likelihood code - currently only working for unity judgement
+function [nll,prmat_unity] = datalike(conditions,responses,theta,model)
 
 global MAXRNG
 debug = 0;
@@ -29,34 +29,47 @@ A_sig = theta(2);%.A_sig; %close aud target sigma
 prior_sig = theta(3);%.prior_sig;%sigma of centrality prior
 p_common = theta(4);%.prior_common;%prior on common cause
 lambda = theta(5); %lapse probability
+prior_mu = 0; %fixed for now
+
+conds_A = conditions(:,1);
+conds_V = conditions(:,2);
+
+unity_judge = model(2) == 1;
 
 %HACK fminsearch does not allow bounds, so I'm including this really hacky
 %way to require that the likelihood is not calculated for impossible
-%values. This will not be necessary when I switch to using either bads or
-%fminsearchbnd, both of which are third party.
-if min(theta(1:3)) <= 0.5 || p_common > 1 || p_common < 0 
+%values. In the future I might switch to bads or fminsearchbnd, both of
+%which are third party but allow bounds. 
+if min(theta(1:3)) <= 0.1 || p_common > 1 || p_common < 0 
     nll = 10000;
     return;
 end
 
-xrange = linspace(-60,60,250); %range for calculating likelihoods.
+xrange = linspace(-60,60,250); %range for integration.
 xrange_V(1,:,1) = xrange;
 xrange_A(1,1,:) = xrange';
 
-% get condition vectors
-conds = unique(data(:,2:3),'rows');
-conds_A = conds(:,1);
-conds_V = conds(:,2);
-respbins = unique(data(:,4));
+%% get pdfs for location for all values of xa and xv in C=1 and C=2 cases
+%C=1 case
+int_mu = bsxfun(@plus,xrange_V./V_sig^2, xrange_A./A_sig^2)/(1/A_sig^2 + 1/V_sig^2);
+int_sig =sqrt((1/A_sig^2 + 1/V_sig^2)^-1);
+int_mu_p = (int_mu ./ int_sig^2 + prior_mu / prior_sig) /(1/prior_sig^2 + 1/int_sig^2);
+int_sig_p = sqrt((1/int_sig^2 + 1/prior_sig^2)^-1);
+%really not sure what to do here now that I have all this... this is where
+%in the code acerbi is using cdf but I don't think I really want to do
+%that.
+int_pdf_V = bsxfun_normpdf(xrange_V,int_mu_p,int_sig_p);
+int_pdf_A = bsxfun_normpdf(xrange_A,int_mu_p,int_sig_p);
 
-% get reponse for each condition (1 column single counts, 1 double
-% counts )
-responses = zeros(length(conds),length(respbins));
-for ic = 1:length(responses)
-    responses(ic,1) = sum(data(:,2) == conds(ic,1)&data(:,3) == conds(ic,2) & data(:,4) == 1); %count single saccade trials in cond ci
-    responses(ic,2) = sum(data(:,2) == conds(ic,1)&data(:,3) == conds(ic,2) & data(:,4) == 2); %count double saccade trials in cond ci
+if debug
+figure;
+imagesc(squeeze(int_pdf_V));
+figure;
+imagesc(squeeze(int_pdf_A));
 end
 
+
+%% find the marginal probability for C = 1 case for all values of xa and xv;
 % calculate the C=2 PDF at each value of xrange, joint probability of xa xv
 %NOTE: this code is adapted from lines 357:371 in
 %VestBMS_BimodalLeftRightDatalike.m by luigi acerbi
@@ -86,10 +99,12 @@ likec1 = intc1 .* bsxfun_normpdf(xrange_A,xrange_V,sqrt(A_sig^2 + V_sig^2)) .* .
 % get posterior for (C=1|xv,xa)
 c1post = (likec1 * p_common)./(likec1 * p_common + (1-p_common)*likec2);
 
-%judgement rule, if post > 0.5, choose unity
-w1_unity = zeros(size(c1post));
-w1_unity(c1post > 0.5) = 1;
-w1_unity(c1post == 0.5) = 0.5;
+if unity_judge
+    %judgement rule, if post > 0.5, choose unity
+    w1_unity = zeros(size(c1post));
+    w1_unity(c1post > 0.5) = 1;
+    w1_unity(c1post == 0.5) = 0.5;
+end
 
 %plots for debugging
 if debug
@@ -97,6 +112,9 @@ if debug
     figure;imagesc(squeeze(w1_unity));
 end
 
+
+
+%% Marginalize over internal variables using numerical integration
 %integrate over xa xv values for every condition in condition vector
 % try both using qtrapz and VestBMS_finalqtrapz. Again adapted from acerbi
 xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
@@ -104,17 +122,18 @@ xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volum
 
 xpdf_A = bsxfun_normpdf(xrange_A, conds_A, A_sig);
 xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 3));  % Not multiplying by volume element(JM?)
-prmat_unity = zeros(numel(conds_V), 2);
-%prmat_unity(:,1) = VestBMS_finalqtrapz(xpdf_V,xpdf_A,w1_unity);    % Not multiplying by volume element (xpdfs did not)
-prmat_unity(:,1) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), w1_unity), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C. 
-prmat_unity(:,2) = 1 - prmat_unity(:,1);
 
-% Fix probabilities
-%JM p cant be greater than 1 or smaller than 0.
-prmat_unity = min(max(prmat_unity,0),1);
+if unity_judge
+    prmat_unity = zeros(numel(conds_V), 2);
+    %prmat_unity(:,1) = VestBMS_finalqtrapz(xpdf_V,xpdf_A,w1_unity);    % Not multiplying by volume element (xpdfs did not)
+    prmat_unity(:,1) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), w1_unity), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C. 
+    prmat_unity(:,2) = 1 - prmat_unity(:,1);
+    % Fix probabilities
+    prmat_unity = min(max(prmat_unity,0),1);
+    %add in chance for random response, lambda
+    prmat_unity = lambda/2 + (1-lambda)*prmat_unity;
+end
 
-%add in change for random response
-prmat_unity = lambda/2 + (1-lambda)*prmat_unity;
 if debug
    %plot decision rule by target sep, for rough comparison with data (will
    %actually depend on eccentricity as well (which is why I'm plotting
@@ -131,8 +150,9 @@ if debug
 end
 
 % calculate negative log likelihood of data
+if unity_judge;
 nll = -1*sum(responses.*log(prmat_unity));
 nll = sum(nll); %sum across bins
-
+end
 
 end

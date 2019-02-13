@@ -13,7 +13,7 @@
 % INPUTS:
 %   -data - tidy_data structure for desired trial type.
 % OUTPUTS: 
-%   -endpoints - saccade endpoints [xcoord, ycoord, time] for every saccade
+%   -endpoints - saccade endpoints [xcoord, ycoord] for every saccade
 %   occuring in data within the go_time to end_time + buffer intervals for each trial
 
 

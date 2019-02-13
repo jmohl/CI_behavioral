@@ -17,29 +17,23 @@
 % theta - contains model fit parameters  
 % model (?) todo
 
+
+%% hack code for starting this process
 global MAXRNG
 MAXRNG = 60;
 
-%% hack code for starting this process
 cd('C:\Users\jtm47\Documents\Projects\CI_behavioral')
 addpath('data','src','src\lautils', 'src\plotting');
 
-data = load('Yoko_AVD2_2019_01_31_tidy.mat');
+model = [1 2]; %add description of model types.
+
+data = load('H08_AVD2_2018_08_10_tidy.mat');
 data= data.tidy_data;
 %get only AV trials
 data = data(strcmp(data.trial_type,'AV') & ~isnan(data.go_time),:);
 data = data(data.n_sacs > 0,:);%only include trials with a saccade
 %get valid saccades only, not sure if necessary
 %data.valid_endpoints = get_response_endpoints(data,0,100)';
-
-%convert into limited table
-data = data(:,[2,4,5,16]); %tr num, Atar, Vtar, nsaccades
-data = table2array(data);
-
-%currently dealing with more than 1 saccade by saying it is just 2. this
-%might change in the future but I need to carefully look at some of the
-%nsac code in tidy_data project to see what to do about it 
-data(data(:,4)>1,4) = 2;
 
 %setting test parameters
 theta = [5,5,5,.5,.1]; %v_sig, A_sig, prior_sig, prior_common, lambda (lapse rate)
@@ -48,6 +42,42 @@ theta = [5,5,5,.5,.1]; %v_sig, A_sig, prior_sig, prior_common, lambda (lapse rat
 fmin_options = optimset('MaxFunEvals',20000,'MaxIter',40000);
 
 debug = 1;
+%% process data for fitting procedure
+% get condition vectors
+conditions = table2array(unique(data(:,{'A_tar','V_tar'}),'rows'));
+
+if model(2) == 1
+    %convert into limited table %todo maybe not this?
+    data = data(:,[2,4,5,16]); %tr num, Atar, Vtar, nsaccades
+    data = table2array(data);
+    %currently dealing with more than 1 saccade by saying it is just 2. this
+    %might change in the future but I need to carefully look at some of the
+    %nsac code in tidy_data project to see what to do about it
+    data(data(:,4)>1,4) = 2;
+    
+    respbins = unique(data(:,4));
+    responses = zeros(length(conditions),length(respbins));
+    for ic = 1:length(responses)
+    % get reponse for each condition (1 column single counts, 1 double
+    % counts)
+        responses(ic,1) = sum(data(:,2) == conditions(ic,1)&data(:,3) == conditions(ic,2) & data(:,4) == 1); %count single saccade trials
+        responses(ic,2) = sum(data(:,2) == conditions(ic,1)&data(:,3) == conditions(ic,2) & data(:,4) == 2); %count double saccade trials
+    end
+else 
+    %get responses for target localization, binned in 1 degree bins.
+    respbins = -45:45;
+    respbin_centers = -44.5:44.5;
+    responses = zeros(length(conditions),length(respbin_centers));
+    for ic = 1:length(conditions)
+        this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
+        %get only valid saccades for each trial
+        valid_sacs = get_response_endpoints(this_data,1,100);
+        valid_sacs = vertcat(valid_sacs{:});
+        valid_sacs = valid_sacs(:,1); %only including xcoord
+        responses(ic,:) = histcounts(valid_sacs',respbins); %count single saccade trials
+    end
+end
+
 
 %% start of actual fitting procedure
 %adapting from Acerbi, this fitting procedure will progress in 2 steps to
@@ -56,11 +86,11 @@ debug = 1;
 %points will be used as initial points for fminsearch optimization, with
 %parameter and nll values saved out.
 
-%todos: validation
+%todos: validation, multi-step fitting
 
 %2/1/19 note: used timeit to test this likelihood function as 0.0091 sec
 %for human subject H08.
-datalike_minsearch = @(theta)datalike(data,theta);
+datalike_minsearch = @(theta)datalike(conditions,responses,theta,model);
 tic
 [fit_results,fit_results_nll,~,~] = fminsearch(datalike_minsearch,theta,fmin_options);
 toc
@@ -68,8 +98,10 @@ toc
 
 if debug 
     %plot some things for comparing with behavior
-    [nll,modelfit] = datalike(data,fit_results);
+    if model(2) == 1
+    [nll,modelfit] = datalike(conditions,responses,fit_results,model);
     plot_psingle(data,modelfit);
+    end
 end
 
 
