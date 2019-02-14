@@ -25,7 +25,7 @@ MAXRNG = 60;
 cd('C:\Users\jtm47\Documents\Projects\CI_behavioral')
 addpath('data','src','src\lautils', 'src\plotting');
 
-model = [1 2]; %add description of model types.
+model = [1 1]; %add description of model types.
 
 data = load('H08_AVD2_2018_08_10_tidy.mat');
 data= data.tidy_data;

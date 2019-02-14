@@ -51,22 +51,38 @@ xrange_A(1,1,:) = xrange';
 
 %% get pdfs for location for all values of xa and xv in C=1 and C=2 cases
 %C=1 case
-int_mu = bsxfun(@plus,xrange_V./V_sig^2, xrange_A./A_sig^2)/(1/A_sig^2 + 1/V_sig^2);
-int_sig =sqrt((1/A_sig^2 + 1/V_sig^2)^-1);
-int_mu_p = (int_mu ./ int_sig^2 + prior_mu / prior_sig) /(1/prior_sig^2 + 1/int_sig^2);
-int_sig_p = sqrt((1/int_sig^2 + 1/prior_sig^2)^-1);
-%really not sure what to do here now that I have all this... this is where
-%in the code acerbi is using cdf but I don't think I really want to do
-%that.
-int_pdf_V = bsxfun_normpdf(xrange_V,int_mu_p,int_sig_p);
-int_pdf_A = bsxfun_normpdf(xrange_A,int_mu_p,int_sig_p);
-
-if debug
-figure;
-imagesc(squeeze(int_pdf_V));
-figure;
-imagesc(squeeze(int_pdf_A));
-end
+% int_mu = bsxfun(@plus,xrange_V./V_sig^2, xrange_A./A_sig^2)/(1/A_sig^2 + 1/V_sig^2);
+% int_sig =sqrt((1/A_sig^2 + 1/V_sig^2)^-1);
+% int_mu_p = (int_mu ./ int_sig^2 + prior_mu / prior_sig) /(1/prior_sig^2 + 1/int_sig^2);
+% int_sig_p = sqrt((1/int_sig^2 + 1/prior_sig^2)^-1);
+% %really not sure what to do here now that I have all this... this is where
+% %in the code acerbi is using cdf but I don't think I really want to do
+% %that.
+% 
+% V_pdf_c1= bsxfun_normpdf(xrange_V,int_mu_p,int_sig_p);
+% A_pdf_c1 = bsxfun_normpdf(xrange_A,int_mu_p,int_sig_p);
+% 
+% if debug
+% figure;
+% imagesc(squeeze(V_pdf_C1));
+% figure;
+% imagesc(squeeze(A_pdf_C1));
+% end
+% 
+% %from kording I think that int_sig_p is actually the answer, it gives me
+% %estimate of S_hat_A and S_hat_V for every value of xa and xv. This is
+% %combined by multiplying by the posteriors on the common cause piece, to
+% %produce estimates of S_hat_A and S_hat_V, for every value of xa and xv.
+% %Then can integrate over xa and xv to produce the response distributions. I
+% %think this is right, but we'll see.
+% 
+% %C=2 case
+% V_mu_p = (xrange_V ./ V_sig^2 + prior_mu / prior_sig) /(1/prior_sig^2 + 1/V_sig^2);
+% V_sig_P = sqrt((1/V_sig^2 + 1/prior_sig^2)^-1);
+% 
+% A_mu_p = (xrange_A ./ A_sig^2 + prior_mu / prior_sig) /(1/prior_sig^2 + 1/A_sig^2);
+% A_sig_P = sqrt((1/A_sig^2 + 1/prior_sig^2)^-1);
+% 
 
 
 %% find the marginal probability for C = 1 case for all values of xa and xv;
@@ -75,29 +91,41 @@ end
 %VestBMS_BimodalLeftRightDatalike.m by luigi acerbi
 %NOTE2: bsxfun_normpdf and _normcdf are also written by acerbi, but I have
 %copied them into this project src
-muc2_V = xrange_V.*prior_sig^2/(V_sig^2 + prior_sig^2);
-sigmac2_V = V_sig*prior_sig/sqrt(V_sig^2 + prior_sig^2);
-muc2_A = xrange_A.*prior_sig^2/(A_sig^2 + prior_sig^2);
-sigmac2_A = A_sig*prior_sig/sqrt(A_sig^2 + prior_sig^2);
-int_V = (bsxfun_normcdf(MAXRNG,muc2_V,sigmac2_V) - bsxfun_normcdf(-MAXRNG,muc2_V,sigmac2_V));
-int_A = (bsxfun_normcdf(MAXRNG,muc2_A,sigmac2_A) - bsxfun_normcdf(-MAXRNG,muc2_A,sigmac2_A));
-int_V = int_V .* bsxfun_normpdf(xrange_V,0,sqrt(V_sig^2 + prior_sig^2));
-int_A = int_A .* bsxfun_normpdf(xrange_A,0,sqrt(A_sig^2 + prior_sig^2));
-likec2 = bsxfun(@times, int_V, int_A);
+% muc2_V = xrange_V.*prior_sig^2/(V_sig^2 + prior_sig^2);
+% sigmac2_V = V_sig*prior_sig/sqrt(V_sig^2 + prior_sig^2);
+% muc2_A = xrange_A.*prior_sig^2/(A_sig^2 + prior_sig^2);
+% sigmac2_A = A_sig*prior_sig/sqrt(A_sig^2 + prior_sig^2);
+% int_V = (bsxfun_normcdf(MAXRNG,muc2_V,sigmac2_V) - bsxfun_normcdf(-MAXRNG,muc2_V,sigmac2_V)); %JM what is the purpose of this step?
+% int_A = (bsxfun_normcdf(MAXRNG,muc2_A,sigmac2_A) - bsxfun_normcdf(-MAXRNG,muc2_A,sigmac2_A));
+% int_V = int_V .* bsxfun_normpdf(xrange_V,0,sqrt(V_sig^2 + prior_sig^2));
+% int_A = int_A .* bsxfun_normpdf(xrange_A,0,sqrt(A_sig^2 + prior_sig^2));
+% likec2 = bsxfun(@times, int_V, int_A);
+% 
+% % calculate the C=1 PDF
+% %NOTE: this code is adapted from lines 399:410 in
+% %VestBMS_BimodalLeftRightDatalike.m by luigi acerbi
+% mutilde = bsxfun(@plus, xrange_A.*A_sig^2, xrange_V.*V_sig^2)./(A_sig^2 + V_sig^2);
+% sigma2tilde = A_sig^2.*V_sig^2./(A_sig^2 + V_sig^2);
+% mucdf = mutilde.*prior_sig^2./(sigma2tilde + prior_sig^2);
+% sigmacdf = sqrt(sigma2tilde./(sigma2tilde + prior_sig^2))*prior_sig;
+% intc1 = (bsxfun_normcdf(MAXRNG, mucdf, sigmacdf) - bsxfun_normcdf(-MAXRNG, mucdf, sigmacdf));
+% likec1 = intc1 .* bsxfun_normpdf(xrange_A,xrange_V,sqrt(A_sig^2 + V_sig^2)) .* ...
+%     bsxfun_normpdf(mutilde,0,sqrt(sigma2tilde +prior_sig^2));
+% % get posterior for (C=1|xv,xa)
+%c1post = (likec1 * p_common)./(likec1 * p_common + (1-p_common)*likec2);
 
-% calculate the C=1 PDF
-%NOTE: this code is adapted from lines 399:410 in
-%VestBMS_BimodalLeftRightDatalike.m by luigi acerbi
-mutilde = bsxfun(@plus, xrange_A.*A_sig^2, xrange_V.*V_sig^2)./(A_sig^2 + V_sig^2);
-sigma2tilde = A_sig^2.*V_sig^2./(A_sig^2 + V_sig^2);
-mucdf = mutilde.*prior_sig^2./(sigma2tilde + prior_sig^2);
-sigmacdf = sqrt(sigma2tilde./(sigma2tilde + prior_sig^2))*prior_sig;
-intc1 = (bsxfun_normcdf(MAXRNG, mucdf, sigmacdf) - bsxfun_normcdf(-MAXRNG, mucdf, sigmacdf));
-likec1 = intc1 .* bsxfun_normpdf(xrange_A,xrange_V,sqrt(A_sig^2 + V_sig^2)) .* ...
-    bsxfun_normpdf(mutilde,0,sqrt(sigma2tilde +prior_sig^2));
+%note: the below code is adapted from my own code instead, making it run
+%on vectors instead of fixed mu values that don't use any of the stuff above, 
+%and it seems to yield the same result....
+Pav_c1 = 1/(2*pi*sqrt(V_sig^2*A_sig^2 + V_sig^2*prior_sig^2 + prior_sig^2*A_sig^2))* ...
+    exp(-0.5 * (bsxfun(@minus, xrange_V,xrange_A).^2*prior_sig^2 + (xrange_V-prior_mu).^2 * A_sig^2 + (xrange_A-prior_mu).^2 * V_sig^2) / ...
+    (V_sig^2*A_sig^2 + V_sig^2*prior_sig^2 + prior_sig^2*A_sig^2));%eq 4 - A, V given one cause
 
-% get posterior for (C=1|xv,xa)
-c1post = (likec1 * p_common)./(likec1 * p_common + (1-p_common)*likec2);
+Pav_c2 = 1/(2*pi*sqrt((V_sig^2 + prior_sig^2)*(prior_sig^2+A_sig^2)))* ...
+    exp(-0.5 * ((xrange_V-prior_mu).^2/(V_sig^2+prior_sig^2) + (xrange_A-prior_mu).^2/(prior_sig^2+A_sig^2))); 
+
+c1post = Pav_c1 .* p_common ./(Pav_c1 .* p_common + Pav_c2 .* (1-p_common)); %eq 2 - posterior on common cause
+
 
 if unity_judge
     %judgement rule, if post > 0.5, choose unity
@@ -111,7 +139,6 @@ if debug
     figure;imagesc(squeeze(c1post));
     figure;imagesc(squeeze(w1_unity));
 end
-
 
 
 %% Marginalize over internal variables using numerical integration
@@ -150,7 +177,7 @@ if debug
 end
 
 % calculate negative log likelihood of data
-if unity_judge;
+if unity_judge
 nll = -1*sum(responses.*log(prmat_unity));
 nll = sum(nll); %sum across bins
 end
