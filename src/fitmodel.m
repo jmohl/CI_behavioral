@@ -28,7 +28,7 @@ addpath('data','src','src\lautils', 'src\plotting');
 
 model = [1 2 1];
 
-data = load('Juno_AVD2_2018_03_15_tidy.mat');
+data = load('H08_AVD2_2018_08_10_tidy.mat');
 data= data.tidy_data;
 %get only AV trials
 data = data(strcmp(data.trial_type,'AV') & ~isnan(data.go_time),:);

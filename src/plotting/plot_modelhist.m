@@ -16,7 +16,7 @@ figure;
 sac_bar = bar(xlocs,saccades/sum(saccades));%normalizing to probability
 sac_bar.FaceAlpha = 0.25;
 hold on
-plot(xlocs,predicted*abs(xlocs(1)-xlocs(2)),'LineWidth',2,'k'); %scaling by bin width so that the probability is matched correctly
+plot(xlocs,predicted*abs(xlocs(1)-xlocs(2)),'LineWidth',2,'Color','k'); %scaling by bin width so that the probability is matched correctly
 xlim([-40 40])
 legend('Actual','Modeled');
 xlabel('endpoint location (degrees)');
