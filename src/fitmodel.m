@@ -19,77 +19,26 @@
 % model(2) Response type (1=unity judgement, 2 = location)
 % model(3) estimation proceedure (1=numerical integration)
 
-%% hack code for starting this process
-global MAXRNG
-MAXRNG = 60;
-
-cd('C:\Users\jtm47\Documents\Projects\CI_behavioral')
-addpath('data','src','src\lautils', 'src\plotting');
-
-model = [1 2 1];
-
-data = load('H08_AVD2_2018_08_10_tidy.mat');
-data= data.tidy_data;
-%get only AV trials
-data = data(strcmp(data.trial_type,'AV') & ~isnan(data.go_time),:);
-data = data(data.n_sacs > 0,:);%only include trials with a saccade
-
-%setting test parameters
-theta = [5,5,5,.5,.1]; %v_sig, A_sig, prior_sig, prior_common, lambda (lapse rate)
-
-%setting fitting procedure options
-fmin_options = optimset('MaxFunEvals',1000,'MaxIter',500,'Display','iter','TolX',1e-3);
-
-eval_n = MAXRNG*2+1;
-eval_range = linspace(-MAXRNG,MAXRNG,eval_n);
-eval_midpoints = linspace(-60+60/eval_n,60-60/eval_n,eval_n-1);
-
-
-debug = 1;
 %% process data for fitting procedure
-% get condition vectors
-conditions = table2array(unique(data(:,{'A_tar','V_tar'}),'rows'));
 
-if model(2) == 1
-    %convert into limited table %todo maybe not this?
-    data = data(:,[2,4,5,16]); %tr num, Atar, Vtar, nsaccades
-    data = table2array(data);
-    %currently dealing with more than 1 saccade by saying it is just 2. this
-    %might change in the future but I need to carefully look at some of the
-    %nsac code in tidy_data project to see what to do about it
-    data(data(:,4)>1,4) = 2;
-    
-    respbins = unique(data(:,4));
-    responses = zeros(length(conditions),length(respbins));
-    for ic = 1:length(responses)
-    % get reponse for each condition (1 column single counts, 1 double
-    % counts)
-        responses(ic,1) = sum(data(:,2) == conditions(ic,1)&data(:,3) == conditions(ic,2) & data(:,4) == 1); %count single saccade trials
-        responses(ic,2) = sum(data(:,2) == conditions(ic,1)&data(:,3) == conditions(ic,2) & data(:,4) == 2); %count double saccade trials
-    end
-else 
-    %get responses for target localization, binned in 1 degree bins.
-    respbins = eval_range;
-    responses = zeros(length(conditions),length(eval_midpoints));
-    for ic = 1:length(conditions)
-        this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
-        %get only valid saccades for each trial
-        valid_sacs = get_response_endpoints(this_data,1,100);
-        valid_sacs = vertcat(valid_sacs{:});
-        valid_sacs = valid_sacs(:,1); %only including xcoord
-        responses(ic,:) = histcounts(valid_sacs',respbins); %count single saccade trials
-    end
-end
 
+function [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model,fitoptions)
+% set relevant variables from options
+UBND = fitoptions.UBND;
+LBND = fitoptions.LBND;
+grid_fineness = fitoptions.grid_fineness;
+eval_midpoints = fitoptions.eval_midpoints;
+fmin_options = fitoptions.fmin_options;
+debug = 0;
 
 %% start of actual fitting procedure
 %adapting from Acerbi, this fitting procedure will progress in 2 steps to
-%start. First, a grid with 1000 points spanning reasonable parameter space will be
-%used to determine starting points for the model. The best 5 starting
-%points will be used as initial points for fminsearch optimization, with
-%parameter and nll values saved out.
+%start. First, a grid spanning reasonable paramter space will be evaluated,
+%and the best ## points will be chosen and used as initial theta values for
+%fminsearch. In the future might switch from fminsearch to bads if that
+%works better.
 
-%todos: validation, multi-step fitting
+%todos: validation
 
 %2/1/19 note: used timeit to test this likelihood function as 0.0091 sec
 %for human subject H08 unity judgement. Unfortunately for the localization
@@ -100,29 +49,45 @@ end
 %
 % f=@() datalike_minsearch(theta);
 % timeit(f)
-
 datalike_minsearch = @(theta)datalike(conditions,responses,theta,model,eval_midpoints);
-tic
-[fit_results,fit_results_nll,~,~] = fminsearch(datalike_minsearch,theta,fmin_options);
-toc
+
+%step 1: evaluate likelihood at all values on grid, pick 5 best points
+theta_range = zeros(length(UBND),grid_fineness);
+for ii = 1:length(UBND)
+    theta_range(ii,:) = linspace(UBND(ii),LBND(ii),grid_fineness);
+end
+[t1,t2,t3,t4,t5] = ndgrid(theta_range(1,:),theta_range(2,:),theta_range(3,:),theta_range(4,:),theta_range(5,:));
+grid_like = zeros(size(t1));
+for grid_pt = 1:numel(t1)
+    this_theta = [t1(grid_pt) t2(grid_pt) t3(grid_pt) t4(grid_pt) t5(grid_pt)];
+    grid_like(grid_pt) = datalike_minsearch(this_theta);
+end
+[~,min_inds] = sort(grid_like(:));
+best_thetas =[t1(min_inds(1:5)) t2(min_inds(1:5)) t3(min_inds(1:5)) t4(min_inds(1:5)) t5(min_inds(1:5))];
+
+%step 2: use best grid params as starting point for fminsearch. 
+fit_thetas = zeros(size(best_thetas));
+fit_nlls = zeros(size(best_thetas,1),1);
+for ii = 1:size(best_thetas,1)
+[fit_thetas(ii,:),fit_nlls(ii),~,~] = fminsearch(datalike_minsearch,best_thetas(ii,:),fmin_options);
+end
 %this was able to run the optimization procedure in 6.4 sec for the unity
 %judgement case. For the localization case it takes much longer.
+[fit_nll,best_ind] = min(fit_nlls(:));
+fit_theta = fit_thetas(best_ind,:);
 
-
-
+[~,fit_dist] = datalike(conditions,responses,fit_theta,model,eval_midpoints);
 
 if debug 
     %plot some things for comparing with behavior
     if model(2) == 1
-    [nll,modelfit] = datalike(conditions,responses,fit_results,model,eval_midpoints);
-    plot_psingle(data,modelfit);
+        plot_psingle(responses,conditions,fit_dist);
     end
     if model(2) == 2
-        [nll,modelfit] = datalike(conditions,responses,fit_results,model,eval_midpoints);
         for ic = 1:length(conditions)
             %plotting the real saccade distributions and those predicted by
             %the model for every condition
-            plot_modelhist(responses(ic,:),modelfit(ic,:),eval_midpoints)
+            plot_modelhist(responses(ic,:),fit_dist(ic,:),eval_midpoints)
             title(sprintf('%d A %d V',conditions(ic,:)))
             set(gcf,'Position',[100,60,1049,895])
         end
@@ -130,7 +95,7 @@ if debug
         
 end
 
-
+end
 
 
 

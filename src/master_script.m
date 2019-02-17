@@ -12,7 +12,12 @@
 
 %% hardcoded parameters
 close all;
+global MAXRNG
+MAXRNG = 50;
 local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
+cd(local_directory)
+addpath('data','src','src\lautils', 'src\plotting');
+
 CI_opts.n_pooled_days = 5; % for using monkey datasets with several days of data
 seed = 'default';
 CI_opts.make_plots = 1;
@@ -20,18 +25,18 @@ CI_opts.correct_bias = 1;
 CI_opts.k_folds = 10; 
 subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
+binsize = 1; %size of bins used for responses, in degrees.
+
 %todo:fix this
 run_days_separately =0;
 
-%adding paths
-cd(local_directory)
-addpath('src','results','data')
-
 % load initial parameters
 load('ini_params.mat')
-%fminsearch options
-fmin_options = optimset('MaxFunEvals',20000,'MaxIter',40000);
 
+% load example day, for testing
+raw_data = load('H08_AVD2_2018_08_10_tidy.mat');% load('Juno_AVD2_2017_07_31_2_tidy.mat')
+raw_data = raw_data.tidy_data;
+subject = 'Juno';
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};

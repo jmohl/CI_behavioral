@@ -28,4 +28,5 @@ for i = 1:height(data)
     this_endpoints(:,1) = this_endpoints(:,1)/coeffs(1) - coeffs(2); %only adjusting first column, x component
     data.valid_endpoints{i}= this_endpoints;
 end
+
 end

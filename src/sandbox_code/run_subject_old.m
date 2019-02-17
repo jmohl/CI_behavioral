@@ -2,14 +2,13 @@
 %
 % -------------------
 % Jeff Mohl
-% 2/15/19
+% 9/6/18
 % -------------------
-%
 % Description: this script will allow running of each step of the
 % behavioral CI project, from loading data, fitting model, and generating
 % figures, for a single subject. It is meant to be run out of
 % master_script and so at least the hard coded section of that script is
-% assumed to have been run. UPDATED to run on new modelfit procedure.
+% assumed to have been run.
 
 %note: H01 has some problems and it is best to exclude for now, since I
 %will probably have to rerun that subject in any case
@@ -17,80 +16,33 @@
 %todo: put this in function form to reduce workspace clutter
 
 
-%% Clean data
-%get valid data that reached go time and had an appropriate trial duration
-valid_data = raw_data(~isnan(raw_data.go_time)&(raw_data.end_time - raw_data.go_time > 700),:);
+%% update data
+raw_data.valid_endpoints = get_response_endpoints(raw_data,0,100)';
+%omit trials without valid endpoints, almost always occurs when trial was aborted
+data = raw_data(~cellfun('isempty',raw_data.valid_endpoints),:);
 
-% add valid endpoints field that extracts endpoints that are defines as
-% "responses" as well as I can define that.
-[valid_endpoints,A_endpoints,V_endpoints] = get_response_endpoints(valid_data,0,100);
-valid_data.valid_endpoints = valid_endpoints;
-valid_data.A_endpoints = A_endpoints;
-valid_data.V_endpoints = V_endpoints;
+%pull out specific locations used in this dataset
+fixed_params.V_tars = sortrows(unique(data.V_tar(~isnan(data.V_tar))));
+fixed_params.A_tars = sortrows(unique(data.A_tar(~isnan(data.A_tar))));
+fixed_params.AV_pairs = sortrows(unique([data.A_tar(~isnan(data.V_tar)& ~isnan(data.A_tar)),data.V_tar(~isnan(data.V_tar)&~isnan(data.A_tar))],'rows'));
 
-%replace n_sacs field with one calculated using valid response endpoints;
-valid_data.n_sacs = cellfun(@(x) size(x,1),valid_data.valid_endpoints);
+%need to cast params as vector for fminsearch
+param_vector = cell2mat(struct2cell(free_params)); 
 
-%omit trials without valid endpoints, very rarely removes data
-data = valid_data(~cellfun('isempty',valid_data.valid_endpoints),:);
+%fit parameters table, for storing results
+fit_params = zeros(4,5);
+fit_params(1,:) = param_vector';
 
-% %pull out specific locations used in this dataset
-% fixed_params.V_tars = sortrows(unique(data.V_tar(~isnan(data.V_tar))));
-% fixed_params.A_tars = sortrows(unique(data.A_tar(~isnan(data.A_tar))));
-% fixed_params.AV_pairs = sortrows(unique([data.A_tar(~isnan(data.V_tar)& ~isnan(data.A_tar)),data.V_tar(~isnan(data.V_tar)&~isnan(data.A_tar))],'rows'));
-% 
-% %need to cast params as vector for fminsearch
-% param_vector = cell2mat(struct2cell(free_params)); 
-% 
-% %fit parameters table, for storing results
-% fit_params = zeros(4,5);
-% fit_params(1,:) = param_vector';
 
-%setting fitting procedure options
-fitoptions.UBND = [15 15 40 .9 .9]; %upper bounds on theta for grid search
-fitoptions.LBND = [1 1 1 .1 0]; %lower bounds on theta
-fitoptions.grid_fineness = 3; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 
-fitoptions.fmin_options = optimset('MaxFunEvals',1000,'MaxIter',500,'Display','iter');
-fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/binsize + 1); %note can adjust fineness of binning here if wanted. This makes 1 degree bins
-fitoptions.eval_midpoints = linspace(-MAXRNG+binsize/2,MAXRNG-binsize/2,length(fitoptions.eval_range)-1);
 
-%% TODO correct eye tracker calibration
-% if CI_opts.correct_bias
-% [ data] = get_bias_corrected_data(data);
-% end
-
-%% split data into train and test sets TODO
-%[AV_train,AV_test] = get_train_test(data,CI_opts.k_folds,fixed_params.AV_pairs);
-
-%% CI model (new)
-model = [1 1 1]; %Bayesian reweighting, C Unknown, unity
-[conditions_unity,responses_unity] = get_prepro_data(data,model,fitoptions);
-[fit_theta_unity,fit_nll_unity,fit_dist_unity]=fitmodel(conditions_unity,responses_unity,model,fitoptions);
-
-%some evaluation plots
-if model(2) == 1
-plot_psingle(responses_unity,conditions_unity,fit_dist_unity);
-saveas(gcf,sprintf('results\\p_single\\psing_%s',subject),'png');
+%% correct eye tracker calibration
+if CI_opts.correct_bias
+[data] = get_bias_corrected_data(data);
 end
 
-model = [1 2 1]; %Bayesian reweighting, C Unknown, unity
-[conditions_loc,responses_loc] = get_prepro_data(data,model,fitoptions);
-[fit_theta_loc,fit_nll_loc,fit_dist_loc]=fitmodel(conditions_loc,responses_loc,model,fitoptions);
+%% split data into train and test sets
+[AV_train,AV_test] = get_train_test(data,CI_opts.k_folds,fixed_params.AV_pairs);
 
-if model(2) == 2
-    try 
-        mkdir(sprintf('results\\localization\\%s',subject)) 
-    end
-    for ic = 1:length(conditions_loc)
-        %plotting the real saccade distributions and those predicted by
-        %the model for every condition
-        plot_modelhist(responses_loc(ic,:),fit_dist_loc(ic,:),fitoptions.eval_midpoints)
-        title(sprintf('%d A %d V',conditions_loc(ic,:)))
-        set(gcf,'Position',[100,60,1049,895])
-        saveas(gcf,sprintf('results\\localization\\%s\\%dA%dV',subject,conditions_loc(ic,:)),'png');
-    end
-end
-%% START OF OLD CODE
 %% fit CI model
 
 % run fminsearch to fit parameters
