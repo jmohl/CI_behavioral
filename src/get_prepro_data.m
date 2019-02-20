@@ -7,15 +7,25 @@
 %
 % Description: preprocess the data to work with fitmodel format.
 %
+% Output format:
+% Model [x 1 x]: unity judgement, n saccades (max =2) 
+% Model [1,2,x]: localization, bayes V1 CxV array with hist counts in each
+% bin. Saccades lumped together into one distribution
+% Model [2,1,x]: localization, bayes V2 CxVxA array where the counts are
+% taken in a grid defined by [Vcoord,Acoord] of a two saccade pair. If one
+% saccade Vcoord = Acoord
 
+% TODO: some cleaning/formatting of this code for readability.
 function [conditions,responses] = get_prepro_data(data,model,fitoptions)
 
 % preprocess data to work with fitmodel
 % get condition vectors
 data = data(strcmp(data.trial_type,'AV'),:);
 conditions = table2array(unique(data(:,{'A_tar','V_tar'}),'rows'));
+midpoints = fitoptions.eval_midpoints;
+edges = fitoptions.eval_range;
 
-if model(2) == 1
+if model(2) == 1 %unity judgement model
     %convert into limited table %todo maybe not this?
     data = data(:,[2,4,5,16]); %tr num, Atar, Vtar, nsaccades
     data = table2array(data);
@@ -32,17 +42,37 @@ if model(2) == 1
         responses(ic,1) = sum(data(:,2) == conditions(ic,1)&data(:,3) == conditions(ic,2) & data(:,4) == 1); %count single saccade trials
         responses(ic,2) = sum(data(:,2) == conditions(ic,1)&data(:,3) == conditions(ic,2) & data(:,4) == 2); %count double saccade trials
     end
-else
-    %get responses for target localization, binned in 1 degree bins.
-    respbins = fitoptions.eval_range;
-    responses = zeros(length(conditions),length(fitoptions.eval_midpoints));
-    for ic = 1:length(conditions)
-        this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
-        %get only valid saccades for each trial
-        valid_sacs = this_data.valid_endpoints;
-        valid_sacs = vertcat(valid_sacs{:});
-        valid_sacs = valid_sacs(:,1); %only including xcoord
-        responses(ic,:) = histcounts(valid_sacs',respbins); %count single saccade trials
+elseif model(2) == 2 %localization
+    if model(1) == 1 %bayes optimal, V1, all saccades lumped together
+        %get responses for target localization, binned in 1 degree bins.
+        respbins = fitoptions.eval_range;
+        responses = zeros(length(conditions),length(midpoints));
+        for ic = 1:length(conditions)
+            this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
+            %get only valid saccades for each trial
+            valid_sacs = this_data.valid_endpoints;
+            valid_sacs = vertcat(valid_sacs{:});
+            valid_sacs = valid_sacs(:,1); %only including xcoord
+            responses(ic,:) = histcounts(valid_sacs',respbins); %count single saccade trials
+        end
+    elseif model(1) == 2 %bayes optimal, v2, split auditory and visual saccades
+        respbins = fitoptions.eval_range;
+        responses = zeros(length(conditions),length(midpoints),length(midpoints)); %[condition x Vlocs x Alocs]
+        for ic = 1:length(conditions)
+            this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
+            %get auditory and visual saccades for each trial
+            A_sacs = this_data.A_endpoints;
+            V_sacs = this_data.V_endpoints;
+            %get single saccade locations
+            single_sacs = this_data(this_data.n_sacs == 1,:).valid_endpoints;
+            %for all single saccade trials, A_sac = V_sac 
+            A_sacs(this_data.n_sacs == 1) = single_sacs;
+            V_sacs(this_data.n_sacs == 1) = single_sacs;
+            %format into vectors
+            A_sacs = cell2mat(A_sacs);
+            V_sacs = cell2mat(V_sacs);
+            responses(ic,:,:) = histcounts2(V_sacs(:,1),A_sacs(:,1),edges,edges);
+        end
     end
 end
 end

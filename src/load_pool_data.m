@@ -11,7 +11,7 @@
 
 function data = load_pool_data(n_pooled_days,subject,seed)
 
-file_name = sprintf('/%s*AVD2*2018*.mat',subject);
+file_name = sprintf('/%s*AVD2*.mat',subject);
 data_dir = dir(['data' file_name]);
 
 if nargin == 2

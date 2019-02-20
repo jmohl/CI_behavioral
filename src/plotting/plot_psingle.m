@@ -24,13 +24,13 @@ end
 
 figure()
 hold on
-A_tars = unique(conds(:,1)); %grouping target disparities
+A_tars = unique(conds(:,1)); %split into 24 and 
 for ii = 1:length(A_tars)
     this_tar = A_tars(ii);
     %disp = conds(conds(:,1) == this_tar,2) - this_tar; %target disparity
-    disp = conds(conds(:,1) == this_tar,2); %using visual target location ,will almost certainly change in future but this provides maximum information
-    p(ii) = plot(disp,responses(conds(:,1) == this_tar,1)./sum(responses(conds(:,1) == this_tar,:),2),'LineWidth',2);
-    plot(disp,modelfit(conds(:,1) == this_tar),'LineWidth',2,'Color','k','LineStyle','--');
+    v_tar = conds(conds(:,1) == this_tar,2); %using visual target location ,will almost certainly change in future but this provides maximum information
+    p(ii) = plot(v_tar,responses(conds(:,1) == this_tar,1)./sum(responses(conds(:,1) == this_tar,:),2),'LineWidth',2);
+    plot(v_tar,modelfit(conds(:,1) == this_tar),'LineWidth',2,'Color',p(ii).Color,'LineStyle','--');
 end
 
 legend(p,cellstr(num2str(A_tars)),'Location','bestoutside')

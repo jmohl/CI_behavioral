@@ -52,6 +52,7 @@ debug = 0;
 datalike_minsearch = @(theta)datalike(conditions,responses,theta,model,eval_midpoints);
 
 %step 1: evaluate likelihood at all values on grid, pick 5 best points
+fprintf('Step 1:grid search\n')
 theta_range = zeros(length(UBND),grid_fineness);
 for ii = 1:length(UBND)
     theta_range(ii,:) = linspace(UBND(ii),LBND(ii),grid_fineness);
@@ -69,7 +70,8 @@ best_thetas =[t1(min_inds(1:5)) t2(min_inds(1:5)) t3(min_inds(1:5)) t4(min_inds(
 fit_thetas = zeros(size(best_thetas));
 fit_nlls = zeros(size(best_thetas,1),1);
 for ii = 1:size(best_thetas,1)
-[fit_thetas(ii,:),fit_nlls(ii),~,~] = fminsearch(datalike_minsearch,best_thetas(ii,:),fmin_options);
+    fprintf('Step 2:fmin search, iter:%d\n',ii)
+    [fit_thetas(ii,:),fit_nlls(ii),~,~] = fminsearch(datalike_minsearch,best_thetas(ii,:),fmin_options);
 end
 %this was able to run the optimization procedure in 6.4 sec for the unity
 %judgement case. For the localization case it takes much longer.
