@@ -20,8 +20,8 @@
 % theta(4) p_common: prior on common cause
 % theta(5) lambda: lapse rate, probability of random response occuring
 % model(1) Model type (1=Bayesian reweighting v1, 2=bayesian reweighting v2, 3=probabilistic fusion, 4 =)
-% model(2) Response type (1=unity judgement, 2 = location)
-% model(3) estimation proceedure (1=numerical integration)
+% model(2) Response type (1=unity judgement, 2 = location, 3 = fit joint)
+% model(3) estimation proceedure (1=numerical integration, 2 = analytic)
 
 %TODO: refactor so that each trial contributes exactly 1 point (if two
 %saccades, should be the join likelihood of the A and V saccade. if one
@@ -34,7 +34,12 @@ function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 model_type = model(1);
 unity_judge = model(2) == 1;
 location_estimate = model(2) == 2;
-method = model(3); %fit using numerical integration
+if model(2) == 3 %do joint fit
+    unity_judge = 1;
+    location_estimate = 1;
+end
+
+method = model(3); %fit using numerical integration, or analytically
 
 
 V_sig = theta(1);%vis target sigma
@@ -62,25 +67,34 @@ xrange_A(1,1,:) = xrange';
 
 %% find the posterior distribution for C = 1 case for all values of xa and xv;
 
-c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common);
-
+if model_type == 3 % probabilistic fusion model, c1post is fixed at p_common
+    c1post = repmat(p_common,1,length(xrange),length(xrange));
+else
+    c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common);
+end
 if unity_judge
     %judgement rule, if post > 0.5, choose unity
+    if model_type == 3
+        w1_unity = c1post;
+    else %use fixed decision rule
     w1_unity = zeros(size(c1post));
     w1_unity(c1post > 0.5) = 1;
     w1_unity(c1post == 0.5) = 0.5;
+    end
 end
 
 %% get likelihood functions for A location and V location
-% this is used for 
-int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
+if location_estimate
+    if method == 1
+        int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
 
-[~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
+        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
 
-% combine likelihoods weighted by posterior on common cause
-
-V_c1c2_pdf = bsxfun(@times,c1post, int_pdf) + bsxfun(@times,(1-c1post), V_seg_pdf);
-A_c1c2_pdf = bsxfun(@times,c1post, int_pdf) + bsxfun(@times,(1-c1post), A_seg_pdf);
+        % combine likelihoods weighted by posterior on common cause
+        V_c1c2_pdf = bsxfun(@times,c1post, int_pdf) + bsxfun(@times,(1-c1post), V_seg_pdf);
+        A_c1c2_pdf = bsxfun(@times,c1post, int_pdf) + bsxfun(@times,(1-c1post), A_seg_pdf);
+    end
+end
 
 %% Marginalize over internal variables using numerical integration
 %integrate over xa xv values for every condition in condition vector
@@ -123,13 +137,62 @@ if method == 1 %method is numerical integration
         end
         
     end
+elseif method == 2 %analytic solution exists
+    if unity_judge && model_type == 3;
+        prmat_unity = zeros(numel(conds_V), 2);
+        prmat_unity(:,1) = repmat(p_common,size(prmat_unity(:,1)));
+        prmat_unity(:,2) = 1 - prmat_unity(:,1);
+        % Fix probabilities
+        prmat_unity = min(max(prmat_unity,0),1);
+        %add in chance for random response, lambda % changed my mind, for
+        %this model the only parameter is p_common, which is basically
+        %lambda
+        %prmat_unity = lambda/2 + (1-lambda)*prmat_unity;
+    end
+    if location_estimate %analytic solution can be found assuming the integrate and segregate pdfs are independent and combined according to constant weight
+        %for each condition, can solve for mu and sigma analytically. use
+        %these to make the pr_mat
+        [~, intx_mu,intx_sig] = get_integrate_pdf(conditions(:,1),conditions(:,2),prior_mu,A_sig,V_sig,prior_sig,xrange);
+        %get params of marginal distribution
+        int_mu = (bsxfun(@plus,bsxfun(@plus,conditions(:,2)./V_sig^2, conditions(:,1)./A_sig^2), intx_mu./intx_sig^2))/(1/A_sig^2 + 1/V_sig^2 + 1/intx_sig^2);
+        int_sig =sqrt((1/A_sig^2 + 1/V_sig^2 + 1/intx_sig^2)^-1);
+        int_pdf = bsxfun_normpdf(xrange,int_mu,int_sig);
+        
+        [~, ~,~,Asx_mu, Vsx_mu,Asx_sig,Vsx_sig] = get_segregate_pdf(conditions(:,1),conditions(:,2),prior_mu,A_sig,V_sig,prior_sig,xrange);
+        As_mu = bsxfun(@plus,conditions(:,1)./A_sig^2, Asx_mu./Asx_sig^2)/(1/A_sig^2 +1/Asx_sig^2);
+        As_sig = sqrt((1/A_sig^2 + 1/Asx_sig^2)^-1);
+        Vs_mu = bsxfun(@plus,conditions(:,1)./A_sig^2, Vsx_mu./Vsx_sig^2)/(1/A_sig^2 +1/Vsx_sig^2);
+        Vs_sig = sqrt((1/A_sig^2 + 1/Vsx_sig^2)^-1);
+        seg_pdf = bsxfun(@times,bsxfun_normpdf(xrange_A,As_mu,As_sig),bsxfun_normpdf(xrange_V,Vs_mu,Vs_sig)) ;
+        
+        %combine = int_pdf added to diagonal of seg pdf, with both weighted
+        %by post_common
+        I_mat = [];
+        I_mat(1,:,:) = eye(length(xrange),length(xrange));
+        I_mat = repmat(I_mat,length(conditions),1,1);
+        int_pdf_diag = bsxfun(@times,I_mat,int_pdf);
+        
+        prmat_sac =  bsxfun(@times,int_pdf_diag, c1post) + bsxfun(@times,seg_pdf,(1-c1post));
+        %add random saccades
+        prmat_sac = lambda/length(xrange)^2 + (1-lambda) * prmat_sac;
+    end
 end
 
 %% calculate negative log likelihood of data
-if unity_judge
+if unity_judge && location_estimate %when fitting jointly
+    nll_u = -1*sum(responses{1}.*log(prmat_unity));
+    nll_u = sum(nll_u); %sum across bins
+    nll_l = -1*sum(responses{2}.*log(prmat_sac));
+    nll_l = sum(nll_l(:)); 
+    
+    nll = nll_u + nll_l; %total nll is sum of independent nll
+    prmat{1} = prmat_unity;
+    prmat{2} = prmat_sac;
+elseif unity_judge
     nll = -1*sum(responses.*log(prmat_unity));
-    nll = sum(nll); %sum across bins
+    nll = sum(nll(:)); %sum across bins
     prmat = prmat_unity;
+    
 elseif location_estimate %this is for the location estimate when cause is unknown
     nll = -1*sum(responses.*log(prmat_sac));
     nll = sum(nll(:)); %sum across bins

@@ -15,8 +15,8 @@
 % data(3) V tar
 % data(4) response (number of saccades for unity judgement case)
 % theta - contains model fit parameters  
-% model(1) Model type (1=Bayesian, 2=null, 3=switching)
-% model(2) Response type (1=unity judgement, 2 = location)
+% model(1) Model type (1=Bayesian, 2=updated bayesian, 3=naive)
+% model(2) Response type (1=unity judgement, 2 = location, 3= joint fit)
 % model(3) estimation proceedure (1=numerical integration)
 
 %% process data for fitting procedure

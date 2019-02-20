@@ -28,7 +28,7 @@ binsize = 1; %size of bins used for responses, in degrees.
 
 %setting fitting procedure options
 fitoptions.correct_bias = 1;
-fitoptions.load_saved_fits = 1; %load saved fits, if they exist
+fitoptions.load_saved_fits = 0; %load saved fits, if they exist
 fitoptions.make_plots = 1;
 fitoptions.UBND = [15 15 40 .9 .9]; %upper bounds on theta for grid search
 fitoptions.LBND = [1 1 1 .1 0]; %lower bounds on theta
@@ -37,14 +37,18 @@ fitoptions.fmin_options = optimset('MaxFunEvals',1000,'MaxIter',500);
 fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/binsize + 1); %note can adjust fineness of binning here if wanted. This makes 1 degree bins
 fitoptions.eval_midpoints = linspace(-MAXRNG+binsize/2,MAXRNG-binsize/2,length(fitoptions.eval_range)-1);
 
-fitoptions.n_pooled_days = 5; % for using monkey datasets with several days of data
+fitoptions.n_pooled_days = 10; % for using monkey datasets with several days of data
+
 seed = 'default';
 %todo:fix this
-run_days_separately =1;
+run_days_separately =0;
 
 %set models to be run
-model_list = {[2,1,1];[2,2,1]}; %unity judgement and localization models
-
+%model descriptions model(1): 2 = bayesian reweighting, 3= probabilistic
+%fusion
+model_list = {[2,1,1];[2,2,1];[3,1,2];[3,2,2];[2,3,1];[3,3,2]}; %models fit independently
+%model_list = {[2,3,1];[3,3,2]}; %fitting models jointly
+%model_list = {[3,1,2];[3,2,2]};
 
 if ~exist('results\modelfits', 'dir')
     mkdir('results\modelfits')
@@ -82,41 +86,8 @@ for i= 1:length(subject_list)
     else
         run_subject
     end
-    %plot distributions of saccades as well as predicted distributions under CI model fit
-    % todo: should make this load the parameters from saved files, instead
-    % of using the ones in the workspace while fitting the model.
-%     if CI_opts.make_plots
-%         plot_diagnostics(fixed_params,data,subject)
-%         set(0,'DefaultFigureVisible','off');
-%         plot_dir = sprintf('results\\fit_dists\\%s',subject);
-%         mkdir(plot_dir);
-%         for j = 1:size(fixed_params.AV_pairs,1)
-%             A_tar = fixed_params.AV_pairs(j,1);
-%             V_tar =  fixed_params.AV_pairs(j,2);
-%             plot_fit_dists(data,[A_tar V_tar],'CI',fit_params('CI',:),fixed_params,-40:40);
-%             saveas(gcf,sprintf('%s\\%s%dA%dV',plot_dir,subject,A_tar,V_tar),'png')
-%         end
-%         set(0,'DefaultFigureVisible','on');
-%     end
 end
 
-%% generate figures
-% % plotting demos, this section
-% if CI_opts.make_plots
-%     % diagnostic plots for this subject, characterizing unimodal bias
-%     plot_diagnostics(fixed_params,data,subject)
-%     % plot distributions of saccades as well as predicted distributions under CI model fit 
-%     set(0,'DefaultFigureVisible','off');
-%     plot_dir = sprintf('results\\fit_dists\\%s',subject);
-%     mkdir(plot_dir);
-%     for i = 1:size(AV_tar_pairs,1)
-%         A_tar = AV_tar_pairs(i,1);
-%         V_tar =  AV_tar_pairs(i,2);
-%         this_A_data = data.A{A_tars == A_tar};
-%         this_V_data = data.V{V_tars == V_tar};
-%         this_AV_data = data.AV{i};
-%         plot_fit_dists(this_A_data,this_V_data,this_AV_data,A_tar,V_tar,fit_params_CI,fixed_params,-40:40);
-%         saveas(gcf,sprintf('%s\\%s%dA%dV',plot_dir,subject,A_tar,V_tar),'png')
-%     end
-%     set(0,'DefaultFigureVisible','on');
-% end
+
+
+

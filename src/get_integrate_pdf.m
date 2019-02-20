@@ -17,7 +17,7 @@
 % a range (i.e. -100:100) or list of saccade endpoints if calculating
 % likelihood
 
-function int_pdf = get_integrate_pdf(xa,xv,prior_mu,A_sig,V_sig,prior_sig,eval_range)
+function [int_pdf, int_mu, int_sig] = get_integrate_pdf(xa,xv,prior_mu,A_sig,V_sig,prior_sig,eval_range)
 if length(xa) == 1
     int_mu = (xv/V_sig^2 + xa/A_sig^2 + prior_mu/prior_sig^2)/(1/A_sig^2 + 1/V_sig^2 + 1/prior_sig^2);
     int_sig =sqrt((1/A_sig^2 + 1/V_sig^2 + 1/prior_sig^2)^-1);

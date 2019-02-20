@@ -8,6 +8,7 @@
 % Description: generates following plots
 % plot 1: example joint distribution for the two saccade case
 % plot 2: unity judgements pooled across subjects (or days)
+% plot 3: specific localization fits, rescaled and sized for nice viewing.
 
 
 %% set initial state
@@ -97,6 +98,83 @@ for A_tar = A_tars'
     saveas(gcf,sprintf('%s\\psing_%s_%dA',figpath,data_labels{data_ind},A_tar),'png');
 end
 end
+
+
+%% plot 3: localization plots + models, rescaled and sized for nice figures
+subject = 'H06';
+tar_pairs = {[-12,-12];[-12, -18];[-12,-24]};
+
+m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
+m=m.m;
+% set desired model and range
+model = [2 2 1];
+xlocs = m.fitoptions.eval_midpoints;
+model_ind = ismember(vertcat(m.models{:}),model,'rows');
+saccades_all = m.responses{model_ind};
+predicted_all = m.fit_dist{model_ind};
+conditions = m.conditions{model_ind};
+figure;
+set(gcf,'Position',[100,60,1600,500])
+for pind = 1:length(tar_pairs)
+    subplot(1,3,pind)
+    tar_pair = tar_pairs{pind};
+    this_ind = ismember(conditions,tar_pair,'rows');
+    saccades = saccades_all(this_ind,:,:);
+    predicted = predicted_all(this_ind,:,:);
+    norm_saccades=saccades/sum(saccades(:));
+    norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
+    %single saccades will be along the diagonal
+    I_mat = logical(eye([length(xlocs),length(xlocs)]));
+    sing_sacs = norm_saccades(:,I_mat);
+    norm_saccades(:,I_mat) = 0; %remove saccades that are AV from counts
+    A_sacs = sum(norm_saccades,2)/2; %divide by 2 to make probabilities sum to 1
+    V_sacs = sum(norm_saccades,3)/2;
+    sac_bar = bar(xlocs,[sing_sacs(:),A_sacs(:),V_sacs(:)],'stacked');%normalizing to probability
+    sac_bar(1).FaceColor = [.2 .2 .2];
+    sac_bar(2).FaceColor = [1 .5 .5];
+    sac_bar(3).FaceColor = [.5 .5 1];
+    hold on
+    projected_pred = (squeeze(sum(norm_predicted,2)) + squeeze(sum(norm_predicted,3))')/2; %divide by 2 to normalize
+    plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
+    
+    title(sprintf('%d A, %d V, %s', tar_pair,subject));
+    legend('Single Sac','A sac','V sac','Modeled','Location','Best');
+    xlabel('endpoint location (degrees)');
+    ylabel('% saccades in bin')
+    set(gca,'box','off')
+    %set bounds that focus on the data instead of the whole range
+    %min_tar = min(tar_pair);
+    %max_tar = max(tar_pair);
+    %xlim([min_tar - 15, max_tar + 15])
+    xlim([-30,10])
+end
+    saveas(gcf,sprintf('%s\\loc\\locex_%s_combined',figpath,subject),'png');
+
+%% plot 4 perform model comparison and make plots
+
+%n params is 5 for all models except the probabilistic fusion model in the
+%unity judgement case
+AIC_table = cell2table(subject_list);
+BIC_table = cell2table(subject_list);
+aic = zeros(length(subject_list),1);
+bic = aic;
+model_array = [];
+
+for i= 1:length(subject_list)
+    m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));
+    m=m.m;
+    models(i,:) = cellfun(@mat2str,m.models,'UniformOutput',0);
+    nll = horzcat(m.nll{:});
+    nparams = repmat(5,1,length(models));
+    nparams(strcmp(models, '[3 1 2]')) =1; % this model only has 1 param.
+    nobs = sum(m.responses{1}(:));
+    [aic(i),bic(i)] = aicbic(-nll,nparams,nobs);
+end
+    
+
+
+
+
 
 
 

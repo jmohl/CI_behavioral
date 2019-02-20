@@ -73,20 +73,25 @@ for mi = 1:size(model_list,1)
 end
 
 %% making plots for single subject
-%some evaluation plots
+%some evaluation plots, note that this replots ALL models in the current
+%configuration. will probably change that in the future but is fine to just
+%set make_plots = 0 for now
 if fitoptions.make_plots
     set(0,'DefaultFigureVisible','off');
     for mi = 1:size(model_list,1)
         model = m.models{mi};
         
-        if model(2) == 1
+        if ismember(model(2), [1 3])
+            try
+                mkdir(sprintf('results\\p_single\\model%d%d%d\\%s',model,m.subject))
+            end
             plot_psingle(m.responses{mi},m.conditions{mi},m.fit_dist{mi});
-            saveas(gcf,sprintf('results\\p_single\\psing_%s',m.subject),'png');
+            saveas(gcf,sprintf('results\\p_single\\model%d%d%d\\psing_%s',model,m.subject),'png');
         end
         
-        if model(2) == 2
+        if ismember(model(2), [2 3])
             try
-                mkdir(sprintf('results\\localization_v2\\%s',m.subject))
+                mkdir(sprintf('results\\localization\\model%d%d%d\\%s',model,m.subject))
             end
             for ic = 1:length(m.conditions{mi})
                 %plotting the real saccade distributions and those predicted by
@@ -94,7 +99,7 @@ if fitoptions.make_plots
                 plot_modelhist(m.responses{mi}(ic,:,:),m.fit_dist{mi}(ic,:,:),m.fitoptions.eval_midpoints)
                 title(sprintf('%d A %d V',m.conditions{mi}(ic,:)))
                 set(gcf,'Position',[100,60,1049,895])
-                saveas(gcf,sprintf('results\\localization_v2\\%s\\%dA%dV',m.subject,m.conditions{mi}(ic,:)),'png');
+                saveas(gcf,sprintf('results\\localization\\model%d%d%d\\%s\\%dA%dV',model,m.subject,m.conditions{mi}(ic,:)),'png');
             end
         end
     end

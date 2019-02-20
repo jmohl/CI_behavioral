@@ -24,7 +24,7 @@
 % seg_pdf, the sum of A_pdf and V_pdf. A
 % A_pdf, normal pdf of auditory target sa given xa and prior
 % V_pdf, same but for visual percept xv.
-function [seg_pdf, A_pdf,V_pdf] = get_segregate_pdf(xa,xv,prior_mu,A_sig,V_sig,prior_sig,eval_range)
+function [seg_pdf, A_pdf,V_pdf, As_mu, Vs_mu,As_sig,Vs_sig] = get_segregate_pdf(xa,xv,prior_mu,A_sig,V_sig,prior_sig,eval_range)
 
 if length(xa) == 1
         As_mu = (xa/A_sig^2 + prior_mu/prior_sig^2) / (1/A_sig^2 + 1/prior_sig^2); %incorporating prior sig on unisensory estimates
