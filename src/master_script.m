@@ -16,15 +16,22 @@ local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
 cd(local_directory)
 addpath('data','src','src\lautils', 'src\plotting');
 
-
-%CI_opts.make_plots = 1;
-
-%CI_opts.k_folds = 10; 
 subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
 global MAXRNG
 MAXRNG = 50;
 binsize = 1; %size of bins used for responses, in degrees.
+
+% set models to be run
+%model list
+% [2 1 1] = bayesian CI (2) unity judgement(1) with numerical integration (1)
+% [3 1 2] = probabilistic fusion (3) unity (1) analytic solution (2)
+% [2 2 1] = bayesian CI (2) localization(2) with numerical integration (1)
+% [3 2 2] = probabilistic fusion (3) localization(2) analytic solution (2)
+% [2 3 1] = bayesian CI (2) joint fit(3) numerical integration(1)
+% [3 3 2] = probabilistic fusion (2) joint fit(3) analytic solution(2)
+
+model_list = {[2,1,1];[3,1,2];[2,2,1];[3,2,2];[2,3,1];[3,3,2]};
 
 %setting fitting procedure options
 fitoptions.correct_bias = 1;
@@ -43,26 +50,15 @@ seed = 'default';
 %todo:fix this
 run_days_separately =0;
 
-%set models to be run
-%model descriptions model(1): 2 = bayesian reweighting, 3= probabilistic
-%fusion
-model_list = {[2,1,1];[2,2,1];[3,1,2];[3,2,2];[2,3,1];[3,3,2]}; %models fit independently
-%model_list = {[2,3,1];[3,3,2]}; %fitting models jointly
-%model_list = {[3,1,2];[3,2,2]};
 
 if ~exist('results\modelfits', 'dir')
     mkdir('results\modelfits')
 end
 
-
-
-% load initial parameters
-% load('ini_params.mat')
-
 % load example day, for testing
 % raw_data = load('H08_AVD2_2018_08_10_tidy.mat');% load('Juno_AVD2_2017_07_31_2_tidy.mat')
 % raw_data = raw_data.tidy_data;
- subject = 'Juno';
+% subject = 'Juno';
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};

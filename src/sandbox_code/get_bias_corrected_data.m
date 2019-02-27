@@ -11,7 +11,9 @@
 % possible while maintaining a linear relationship (taking visually guided
 % saccades as approximately unbiased). It acts only on the x (horizontal)
 % component of the data
-
+%
+% NOTE: this functionality was offloaded into the tidy_data creation
+% process
 
 function [data] = get_bias_corrected_data(data)
 

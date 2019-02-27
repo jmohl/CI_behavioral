@@ -85,7 +85,14 @@ if fitoptions.make_plots
             try
                 mkdir(sprintf('results\\p_single\\model%d%d%d\\%s',model,m.subject))
             end
-            plot_psingle(m.responses{mi},m.conditions{mi},m.fit_dist{mi});
+            if model(2) == 3
+                fit_dist = m.fit_dist{mi}{1};
+                responses = m.responses{mi}{1};
+            else 
+                fit_dist = m.fit_dist{mi};
+                responses = m.responses{mi};
+            end
+            plot_psingle(responses,m.conditions{mi},fit_dist);
             saveas(gcf,sprintf('results\\p_single\\model%d%d%d\\psing_%s',model,m.subject),'png');
         end
         
@@ -95,8 +102,15 @@ if fitoptions.make_plots
             end
             for ic = 1:length(m.conditions{mi})
                 %plotting the real saccade distributions and those predicted by
-                %the model for every condition ic = 5;
-                plot_modelhist(m.responses{mi}(ic,:,:),m.fit_dist{mi}(ic,:,:),m.fitoptions.eval_midpoints)
+                %the model for every condition ic = 5;if model(2) == 3
+                if model(2) == 3
+                    fit_dist = m.fit_dist{mi}{2};
+                    responses = m.responses{mi}{2};
+                else
+                    fit_dist = m.fit_dist{mi};
+                    responses = m.responses{mi};
+                end
+                plot_modelhist(responses(ic,:,:),fit_dist(ic,:,:),m.fitoptions.eval_midpoints)
                 title(sprintf('%d A %d V',m.conditions{mi}(ic,:)))
                 set(gcf,'Position',[100,60,1049,895])
                 saveas(gcf,sprintf('results\\localization\\model%d%d%d\\%s\\%dA%dV',model,m.subject,m.conditions{mi}(ic,:)),'png');

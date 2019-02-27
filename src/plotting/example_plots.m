@@ -101,18 +101,24 @@ end
 
 
 %% plot 3: localization plots + models, rescaled and sized for nice figures
-subject = 'H06';
+subject = 'H03';
 tar_pairs = {[-12,-12];[-12, -18];[-12,-24]};
 
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 % set desired model and range
-model = [2 2 1];
+model = [2 3 1];
 xlocs = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
+if model(2) == 3
+saccades_all = m.responses{model_ind}{2};
+predicted_all = m.fit_dist{model_ind}{2};
+else
 saccades_all = m.responses{model_ind};
 predicted_all = m.fit_dist{model_ind};
+end
 conditions = m.conditions{model_ind};
+
 figure;
 set(gcf,'Position',[100,60,1600,500])
 for pind = 1:length(tar_pairs)
@@ -148,7 +154,7 @@ for pind = 1:length(tar_pairs)
     %xlim([min_tar - 15, max_tar + 15])
     xlim([-30,10])
 end
-    saveas(gcf,sprintf('%s\\loc\\locex_%s_combined',figpath,subject),'png');
+    saveas(gcf,sprintf('%s\\loc\\locex_%s_combined%d%d%d',figpath,subject,model),'png');
 
 %% plot 4 perform model comparison and make plots
 
@@ -156,7 +162,7 @@ end
 %unity judgement case
 AIC_table = cell2table(subject_list);
 BIC_table = cell2table(subject_list);
-aic = zeros(length(subject_list),1);
+aic = zeros(length(subject_list),6);% number of models needed
 bic = aic;
 model_array = [];
 
@@ -168,7 +174,7 @@ for i= 1:length(subject_list)
     nparams = repmat(5,1,length(models));
     nparams(strcmp(models, '[3 1 2]')) =1; % this model only has 1 param.
     nobs = sum(m.responses{1}(:));
-    [aic(i),bic(i)] = aicbic(-nll,nparams,nobs);
+    [aic(i,:),bic(i,:)] = aicbic(-nll,nparams,nobs);
 end
     
 
