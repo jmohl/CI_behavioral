@@ -17,26 +17,11 @@
 %todo: put this in function form to reduce workspace clutter
 
 %% Clean data
-%get valid data that reached go time and had an appropriate trial duration
-valid_data = raw_data(~isnan(raw_data.go_time)&(raw_data.end_time - raw_data.go_time > 700),:);
-
-% add valid endpoints field that extracts endpoints that are defines as
-% "responses" as well as I can define that.
-[valid_endpoints,A_endpoints,V_endpoints] = get_response_endpoints(valid_data,0,100);
-valid_data.valid_endpoints = valid_endpoints;
-valid_data.A_endpoints = A_endpoints;
-valid_data.V_endpoints = V_endpoints;
-
-%replace n_sacs field with one calculated using valid response endpoints;
-valid_data.n_sacs = cellfun(@(x) size(x,1),valid_data.valid_endpoints);
+%get valid data only
+valid_data = raw_data(logical(raw_data.valid_tr),:);
 
 %omit trials without valid endpoints, very rarely removes data
 data = valid_data(~cellfun('isempty',valid_data.valid_endpoints),:);
-
-%% TODO correct eye tracker calibration
-if fitoptions.correct_bias 
-    [data] = get_bias_corrected_data(data); 
-end
 
 %% split data into train and test sets TODO
 %[AV_train,AV_test] = get_train_test(data,CI_opts.k_folds,fixed_params.AV_pairs);
