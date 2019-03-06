@@ -34,7 +34,7 @@ end
 
 if unity_judge %unity judgement model
     %convert into limited table %todo maybe not this?
-    data_array = data(:,[2,4,5,16]); %tr num, Atar, Vtar, nsaccades
+    data_array = data(:,{'trial','A_tar','V_tar','n_sacs'}); %tr num, Atar, Vtar, nsaccades
     data_array = table2array(data_array);
     %currently dealing with more than 1 saccade by saying it is just 2. this
     %might change in the future but I need to carefully look at some of the

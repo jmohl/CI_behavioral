@@ -31,8 +31,9 @@ binsize = 1; %size of bins used for responses, in degrees.
 % [2 3 1] = bayesian CI (2) joint fit(3) numerical integration(1)
 % [3 3 2] = probabilistic fusion (2) joint fit(3) analytic solution(2)
 
-model_list = {[2,1,1];[3,1,2];[2,2,1];[3,2,2];[2,3,1];[3,3,2]};
-
+%3/6/19 JM getting rid of numerical integration because I don't actually
+%think that works, also not running the joint fit right now
+model_list = {[2,1,1];[3,1,1];[2,2,1];[3,2,1]};%;[2,3,1];[3,3,1]};
 %setting fitting procedure options
 fitoptions.load_saved_fits = 0; %load saved fits, if they exist
 fitoptions.make_plots = 1;
@@ -75,10 +76,10 @@ for i= 1:length(subject_list)
         for this_day=1:length(days_list)
             raw_data = comb_data(strcmp(comb_data.file_ID, days_list{this_day}),:);
             subject = days_list{this_day};
-            run_subject
+            run_subject(subject,raw_data,model_list,fitoptions)
         end
     else
-        run_subject
+        run_subject(subject,raw_data,model_list,fitoptions)
     end
 end
 

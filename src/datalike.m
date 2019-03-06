@@ -131,13 +131,13 @@ if method == 1 %method is numerical integration
         %lamda is the join probability
         if model_type == 1 %old bayesian reweighting method, saccades are unlabeled and all saccades are lumped together
             prmat_sac = (prmat_est_V + prmat_est_A)/2; %normalized
-        elseif model_type == 2 %new bayesian reweighting, A and V saccades are labeled, using joint distribution instead of sum of distributions
+        else %new bayesian reweighting, A and V saccades are labeled, using joint distribution instead of sum of distributions
             prmat_est_A_reshape(:,1,1:size(prmat_est_A,2)) = prmat_est_A;
             prmat_sac = bsxfun(@times,prmat_est_V,prmat_est_A_reshape);
         end
         
     end
-elseif method == 2 %analytic solution exists
+elseif method == 2 %analytic solution exists 3/6/19 don't think this actually works, should probably remove
     if unity_judge && model_type == 3;
         prmat_unity = zeros(numel(conds_V), 2);
         prmat_unity(:,1) = repmat(p_common,size(prmat_unity(:,1)));
