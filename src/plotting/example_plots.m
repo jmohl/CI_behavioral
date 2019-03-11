@@ -161,13 +161,11 @@ end
 %n params is 5 for all models except the probabilistic fusion model in the
 %unity judgement case
 
-subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+subject_list = {'Juno'};% 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
-AIC_table = cell2table(subject_list);
-BIC_table = cell2table(subject_list);
-aic = zeros(length(subject_list),4);% number of models needed
+aic = zeros(length(subject_list),3);% number of models needed
 bic = aic;
-nparams = [5, 1, 5, 5];
+nparams = [5, 5, 5];
 clear models
 for i= 1:length(subject_list)
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));
@@ -175,7 +173,7 @@ for i= 1:length(subject_list)
     %models(i,:) = cellfun(@mat2str,m.models,'UniformOutput',0);
     models(i,:)=m.models;
     nll = horzcat(m.nll{:});
-    nobs = sum(m.responses{1}(:));
+    nobs = sum(m.responses{1}{1,1}(:));
     [aic(i,:),bic(i,:)] = aicbic(-nll,nparams,nobs);
 end
 
@@ -190,29 +188,27 @@ mc_table = [aic_table,bic_table];
 mc_table.Properties.RowNames = subject_list;
 
 %JM todo fix this
-unity_dif_BIC = bic(:,1) - bic(:,2); %bayesian - force fusion model, BIC dif, unity judgmenet task
-loc_dif_BIC = bic(:,3) - bic(:,4); %bayesian - force fusion model, BIC dif, localization task
-
-% plot results
-figure;
-sc_plot = scatter(unity_dif_BIC,ones(length(subject_list),1),100);
-sc_plot.CData = 1:length(subject_list);
-sc_plot.MarkerFaceColor = 'flat';
-sc_plot.MarkerFaceAlpha = 0.5;
-hold on;
-sc_plot = scatter(loc_dif_BIC,ones(length(subject_list),1)*2,100);
-sc_plot.CData = 1:length(subject_list);
-sc_plot.MarkerFaceColor = 'flat';
-sc_plot.MarkerFaceAlpha = 0.5;
-labeled_data = [unity_dif_BIC, ones(length(subject_list),1)];
-labeled_data = [labeled_data;loc_dif_BIC,ones(length(subject_list),1)*2];
-boxplot(labeled_data(:,1),labeled_data(:,2), 'orientation', 'horizontal','plotstyle','compact','Colors','k','Labels',{'unity','loc'});
-xlabel('BIC difference between bayesian and force fusion model')
-plot([0 0], [0,3],'LineWidth',2,'Color',[0 0 0 .5])
-ylim([0 3])
-title('Evidence for segregating model vs CI model')
-saveas(gcf,sprintf('%s\bic_dif',figpath),'png');
-
+% loc_dif_BIC = bic(:,1) - bic(:,2); %bayesian - force fusion model, BIC dif, localization task
+% 
+% % plot results
+% figure;
+% % sc_plot = scatter(unity_dif_BIC,ones(length(subject_list),1),100);
+% % sc_plot.CData = 1:length(subject_list);
+% % sc_plot.MarkerFaceColor = 'flat';
+% % sc_plot.MarkerFaceAlpha = 0.5;
+% sc_plot = scatter(loc_dif_BIC,ones(length(subject_list),1)*2,100);
+% sc_plot.CData = 1:length(subject_list);
+% sc_plot.MarkerFaceColor = 'flat';
+% sc_plot.MarkerFaceAlpha = 0.5;
+% % labeled_data = [unity_dif_BIC, ones(length(subject_list),1)];
+% labeled_data = [loc_dif_BIC,ones(length(subject_list),1)*2];
+% % boxplot(labeled_data(:,1),labeled_data(:,2), 'orientation', 'horizontal','plotstyle','compact','Colors','k','Labels',{'unity','loc'});
+% xlabel('BIC difference between bayesian and force fusion model')
+% plot([0 0], [0,3],'LineWidth',2,'Color',[0 0 0 .5])
+% ylim([0 3])
+% title('Evidence for segregating model vs CI model')
+% saveas(gcf,sprintf('%s\bic_dif',figpath),'png');
+% 
 
 
 
