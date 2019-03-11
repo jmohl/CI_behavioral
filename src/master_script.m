@@ -34,8 +34,9 @@ binsize = 1; %size of bins used for responses, in degrees.
 %3/6/19 JM getting rid of numerical integration because I don't actually
 %think that works, also not running the joint fit right now
 model_list = {[2,1,1];[3,1,1];[2,2,1];[3,2,1]};%;[2,3,1];[3,3,1]};
+model_list = {[4,2,1]}; % new model selection model
 %setting fitting procedure options
-fitoptions.load_saved_fits = 0; %load saved fits, if they exist
+fitoptions.load_saved_fits = 1; %load saved fits, if they exist
 fitoptions.make_plots = 1;
 fitoptions.UBND = [15 15 40 .9 .9]; %upper bounds on theta for grid search
 fitoptions.LBND = [1 1 1 .1 0]; %lower bounds on theta
@@ -45,7 +46,7 @@ fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/binsize + 1); %note can
 fitoptions.eval_midpoints = linspace(-MAXRNG+binsize/2,MAXRNG-binsize/2,length(fitoptions.eval_range)-1);
 
 %todo:fix this
-run_days_separately =0;
+run_days_separately = 0;
 
 
 if ~exist('results\modelfits', 'dir')

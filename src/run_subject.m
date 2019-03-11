@@ -43,7 +43,7 @@ for mi = 1:size(model_list,1)
     end
     model = model_list{mi}; 
     fprintf('Fitting Subject: %s, Model: %d %d %d\n',subject,model)
-    m.models{mi} = model;
+    m.models{end+1} = model;
     [conditions,responses] = get_prepro_data(data,model,fitoptions);
     [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model,fitoptions);
     m.thetas{mi} = fit_theta;
@@ -67,7 +67,7 @@ if fitoptions.make_plots
         
         if ismember(model(2), [1 3])
             try
-                mkdir(sprintf('results\\p_single\\model%d%d%d\\%s',model,m.subject))
+                mkdir(sprintf('results\\p_single\\model%d%d%d',model))
             end
             if model(2) == 3
                 fit_dist = m.fit_dist{mi}{1};

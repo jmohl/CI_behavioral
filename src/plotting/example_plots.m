@@ -101,13 +101,13 @@ end
 
 
 %% plot 3: localization plots + models, rescaled and sized for nice figures
-subject = 'H03';
+subject = 'H08';
 tar_pairs = {[-12,-12];[-12, -18];[-12,-24]};
 
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 % set desired model and range
-model = [2 3 1];
+model = [4 2 1];
 xlocs = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
 if model(2) == 3
@@ -160,23 +160,59 @@ end
 
 %n params is 5 for all models except the probabilistic fusion model in the
 %unity judgement case
+
+subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+
 AIC_table = cell2table(subject_list);
 BIC_table = cell2table(subject_list);
-aic = zeros(length(subject_list),6);% number of models needed
+aic = zeros(length(subject_list),4);% number of models needed
 bic = aic;
-model_array = [];
-
+nparams = [5, 1, 5, 5];
+clear models
 for i= 1:length(subject_list)
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));
     m=m.m;
-    models(i,:) = cellfun(@mat2str,m.models,'UniformOutput',0);
+    %models(i,:) = cellfun(@mat2str,m.models,'UniformOutput',0);
+    models(i,:)=m.models;
     nll = horzcat(m.nll{:});
-    nparams = repmat(5,1,length(models));
-    nparams(strcmp(models, '[3 1 2]')) =1; % this model only has 1 param.
     nobs = sum(m.responses{1}(:));
     [aic(i,:),bic(i,:)] = aicbic(-nll,nparams,nobs);
 end
+
+%get model names using model values
+model_names = get_model_names(models);
     
+aic_table = array2table(aic);
+aic_table.Properties.VariableNames = strcat(model_names,'_AIC');
+bic_table =   array2table(bic);
+bic_table.Properties.VariableNames = strcat(model_names,'_BIC');
+mc_table = [aic_table,bic_table];
+mc_table.Properties.RowNames = subject_list;
+
+%JM todo fix this
+unity_dif_BIC = bic(:,1) - bic(:,2); %bayesian - force fusion model, BIC dif, unity judgmenet task
+loc_dif_BIC = bic(:,3) - bic(:,4); %bayesian - force fusion model, BIC dif, localization task
+
+% plot results
+figure;
+sc_plot = scatter(unity_dif_BIC,ones(length(subject_list),1),100);
+sc_plot.CData = 1:length(subject_list);
+sc_plot.MarkerFaceColor = 'flat';
+sc_plot.MarkerFaceAlpha = 0.5;
+hold on;
+sc_plot = scatter(loc_dif_BIC,ones(length(subject_list),1)*2,100);
+sc_plot.CData = 1:length(subject_list);
+sc_plot.MarkerFaceColor = 'flat';
+sc_plot.MarkerFaceAlpha = 0.5;
+labeled_data = [unity_dif_BIC, ones(length(subject_list),1)];
+labeled_data = [labeled_data;loc_dif_BIC,ones(length(subject_list),1)*2];
+boxplot(labeled_data(:,1),labeled_data(:,2), 'orientation', 'horizontal','plotstyle','compact','Colors','k','Labels',{'unity','loc'});
+xlabel('BIC difference between bayesian and force fusion model')
+plot([0 0], [0,3],'LineWidth',2,'Color',[0 0 0 .5])
+ylim([0 3])
+title('Evidence for segregating model vs CI model')
+saveas(gcf,sprintf('%s\bic_dif',figpath),'png');
+
 
 
 

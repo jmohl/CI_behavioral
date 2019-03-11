@@ -19,19 +19,19 @@
 % theta(3) prior_sig: sigma on target location prior
 % theta(4) p_common: prior on common cause
 % theta(5) lambda: lapse rate, probability of random response occuring
-% model(1) Model type (1=Bayesian reweighting v1, 2=bayesian reweighting v2, 3=probabilistic fusion, 4 =)
+% model(1) Model type (1=Bayesian reweighting v1, 2=bayesian reweighting v2, 3=probabilistic fusion, 4 = model selection)
 % model(2) Response type (1=unity judgement, 2 = location, 3 = fit joint)
 % model(3) estimation proceedure (1=numerical integration, 2 = analytic)
 
-%TODO: refactor so that each trial contributes exactly 1 point (if two
-%saccades, should be the join likelihood of the A and V saccade. if one
-%saccade, should be the likelihood of the unity case)
+%TODO: this is getting a little confusing with the factorial model types.
+%need to double check that the proper values are being used at all the
+%different stages for if statements.
 
 
 %% start of likelihood code - currently only working for unity judgement
 function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 
-model_type = model(1);
+CI_type = model(1);
 unity_judge = model(2) == 1;
 location_estimate = model(2) == 2;
 if model(2) == 3 %do joint fit
@@ -67,16 +67,14 @@ xrange_A(1,1,:) = xrange';
 
 %% find the posterior distribution for C = 1 case for all values of xa and xv;
 
-if model_type == 3 % probabilistic fusion model, c1post is fixed at p_common
-    c1post = repmat(p_common,1,length(xrange),length(xrange));
-else
+if CI_type ~= 3 % probabilistic fusion model, c1post is fixed at p_common
     c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common);
 end
 if unity_judge
     %judgement rule, if post > 0.5, choose unity
-    if model_type == 3
-        w1_unity = c1post;
-    else %use fixed decision rule
+    if CI_type == 3
+        w1_unity = repmat(p_common,1,length(xrange),length(xrange));
+    else %use fixed decision rule for now
     w1_unity = zeros(size(c1post));
     w1_unity(c1post > 0.5) = 1;
     w1_unity(c1post == 0.5) = 0.5;
@@ -85,14 +83,19 @@ end
 
 %% get likelihood functions for A location and V location
 if location_estimate
-    if method == 1
-        int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
-
-        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
-
-        % combine likelihoods weighted by posterior on common cause
+    int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
+    
+    [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
+    
+    % combine likelihoods weighted by posterior on common cause
+    if CI_type == 2 %if bayesian reweighting
         V_c1c2_pdf = bsxfun(@times,c1post, int_pdf) + bsxfun(@times,(1-c1post), V_seg_pdf);
         A_c1c2_pdf = bsxfun(@times,c1post, int_pdf) + bsxfun(@times,(1-c1post), A_seg_pdf);
+    elseif CI_type == 4 %if model selection, choose the best model and use that one exclusively (set weight on alternative to 0)
+        w1_unity = zeros(size(c1post));
+        w1_unity(c1post > 0.5) = 1;
+        V_c1c2_pdf = bsxfun(@times,w1_unity, int_pdf) + bsxfun(@times,(1-w1_unity), V_seg_pdf);
+        A_c1c2_pdf = bsxfun(@times,w1_unity, int_pdf) + bsxfun(@times,(1-w1_unity), A_seg_pdf);
     end
 end
 
@@ -129,7 +132,7 @@ if method == 1 %method is numerical integration
         prmat_est_V = lambda/length(xrange) + (1-lambda)*prmat_est_V;
         prmat_est_A = lambda/length(xrange) + (1-lambda)*prmat_est_A;
         %lamda is the join probability
-        if model_type == 1 %old bayesian reweighting method, saccades are unlabeled and all saccades are lumped together
+        if CI_type == 1 %old bayesian reweighting method, saccades are unlabeled and all saccades are lumped together
             prmat_sac = (prmat_est_V + prmat_est_A)/2; %normalized
         else %new bayesian reweighting, A and V saccades are labeled, using joint distribution instead of sum of distributions
             prmat_est_A_reshape(:,1,1:size(prmat_est_A,2)) = prmat_est_A;
@@ -138,7 +141,7 @@ if method == 1 %method is numerical integration
         
     end
 elseif method == 2 %analytic solution exists 3/6/19 don't think this actually works, should probably remove
-    if unity_judge && model_type == 3;
+    if unity_judge && CI_type == 3;
         prmat_unity = zeros(numel(conds_V), 2);
         prmat_unity(:,1) = repmat(p_common,size(prmat_unity(:,1)));
         prmat_unity(:,2) = 1 - prmat_unity(:,1);
