@@ -51,35 +51,21 @@ if unity_judge %unity judgement model
     end
 end
 if location_estimate %localization
-    if model(1) == 1 %bayes optimal, V1, all saccades lumped together
-        %get responses for target localization, binned in 1 degree bins.
-        respbins = fitoptions.eval_range;
-        responses_L = zeros(length(conditions),length(midpoints));
-        for ic = 1:length(conditions)
-            this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
-            %get only valid saccades for each trial
-            valid_sacs = this_data.valid_endpoints;
-            valid_sacs = vertcat(valid_sacs{:});
-            valid_sacs = valid_sacs(:,1); %only including xcoord
-            responses_L(ic,:) = histcounts(valid_sacs',respbins); %count single saccade trials
-        end
-    else %bayes optimal, v2, split auditory and visual saccades
-        responses_L = zeros(length(conditions),length(midpoints),length(midpoints)); %[condition x Vlocs x Alocs]
-        for ic = 1:length(conditions)
-            this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
-            %get auditory and visual saccades for each trial
-            A_sacs = this_data.A_endpoints;
-            V_sacs = this_data.V_endpoints;
-            %get single saccade locations
-            single_sacs = this_data(this_data.n_sacs == 1,:).valid_endpoints;
-            %for all single saccade trials, A_sac = V_sac
-            A_sacs(this_data.n_sacs == 1) = single_sacs;
-            V_sacs(this_data.n_sacs == 1) = single_sacs;
-            %format into vectors
-            A_sacs = cell2mat(A_sacs);
-            V_sacs = cell2mat(V_sacs);
-            responses_L(ic,:,:) = histcounts2(V_sacs(:,1),A_sacs(:,1),edges,edges);
-        end
+    responses_L = zeros(length(conditions),length(midpoints),length(midpoints)); %[condition x Vlocs x Alocs]
+    for ic = 1:length(conditions)
+        this_data = data(data{:,{'A_tar'}}==conditions(ic,1) & data{:,{'V_tar'}} == conditions(ic,2),:);
+        %get auditory and visual saccades for each trial
+        A_sacs = this_data.A_endpoints;
+        V_sacs = this_data.V_endpoints;
+        %get single saccade locations
+        single_sacs = this_data(this_data.n_sacs == 1,:).valid_endpoints;
+        %for all single saccade trials, A_sac = V_sac
+        A_sacs(this_data.n_sacs == 1) = single_sacs;
+        V_sacs(this_data.n_sacs == 1) = single_sacs;
+        %format into vectors
+        A_sacs = cell2mat(A_sacs);
+        V_sacs = cell2mat(V_sacs);
+        responses_L(ic,:,:) = histcounts2(V_sacs(:,1),A_sacs(:,1),edges,edges);
     end
 end
 

@@ -30,14 +30,14 @@ binsize = 1; %size of bins used for responses, in degrees.
 % [2 2 1] = probabilistic fusion (2) localization(2) with reweighting (2)
 % [1 3 1] = bayesian CI (1) joint fit(3) reweighting(1)
 % [1 3 2] = bayesian CI (1) joint fit(3) model selection(2)
-% [1 3 3] = bayesian CI (1) joint fit(3) probabilistic fusion(1)
+% [1 3 3] = bayesian CI (1) joint fit(3) probabilistic fusion(3)
 
 %3/6/19 JM getting rid of numerical integration because I don't actually
 %think that works, also not running the joint fit right now
 model_list = {[1 3 1]; [1 3 2];[1 3 3]};
 %setting fitting procedure options
 fitoptions.load_saved_fits = 1; %load saved fits, if they exist
-fitoptions.make_plots = 1;
+fitoptions.make_plots = 0;
 fitoptions.UBND = [15 15 40 .9 .9]; %upper bounds on theta for grid search
 fitoptions.LBND = [1 1 1 .1 0]; %lower bounds on theta
 fitoptions.grid_fineness = 3; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 

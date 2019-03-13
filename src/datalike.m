@@ -138,13 +138,8 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_est_V = lambda/length(xrange) + (1-lambda)*prmat_est_V;
     prmat_est_A = lambda/length(xrange) + (1-lambda)*prmat_est_A;
     %lamda is the join probability
-    if CI_type == 1 %old bayesian reweighting method, saccades are unlabeled and all saccades are lumped together
-        prmat_sac = (prmat_est_V + prmat_est_A)/2; %normalized
-    else %new bayesian reweighting, A and V saccades are labeled, using joint distribution instead of sum of distributions
-        prmat_est_A_reshape(:,1,1:size(prmat_est_A,2)) = prmat_est_A;
-        prmat_sac = bsxfun(@times,prmat_est_V,prmat_est_A_reshape);
-    end
-    
+    prmat_est_A_reshape(:,1,1:size(prmat_est_A,2)) = prmat_est_A;
+    prmat_sac = bsxfun(@times,prmat_est_V,prmat_est_A_reshape);
 end
 
 
