@@ -15,14 +15,14 @@
 local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
 cd(local_directory)
 addpath('src', 'src\plotting','results');
-figpath = 'results\ex_figs';
+figpath = 'results\figures';
 
 %% plot 1: example 2d joint distribution plots
 %load fit data
 m=load('results\modelfits\Juno_m.mat');
 m=m.m;
 % set desired model and range
-model = [2 2 1];%keep an eye on this in the future, might change
+model = [2 1 2];%keep an eye on this in the future, might change
 locations = m.fitoptions.eval_range;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
 
@@ -45,12 +45,13 @@ end
 
 %build unity judgement array of response/fit vectors
 subjects_H = {'H02_m.mat' 'H03_m.mat' 'H04_m.mat' 'H05_m.mat' 'H06_m.mat' 'H07_m.mat' 'H08_m.mat'};
-J_files = struct2cell(dir('results\modelfits\Juno_AVD2*'));
+J_files = struct2cell(dir('results\fit_to_all\modelfits\Juno*'));
 subjects_J = J_files(1,:);
-Y_files = struct2cell(dir('results\modelfits\Yoko_AVD2*'));
+Y_files = struct2cell(dir('results\fit_to_all\modelfits\Yoko*'));
 subjects_Y = Y_files(1,:);
 subjects = {subjects_H,subjects_J,subjects_Y};
 data_labels = {'Human','J','Y'};
+model = [1 3 1];%joint fit model
 
 for data_ind = 1:3
     this_subjects = subjects{data_ind};
@@ -58,12 +59,16 @@ for data_ind = 1:3
     all_resp = zeros(20,length(this_subjects));
     all_fits = all_resp;
 for subject = this_subjects
-    m = load(sprintf('results\\modelfits\\%s',subject{:}));
+    m = load(sprintf('results\\fit_to_all\\modelfits\\%s',subject{:}));
     m=m.m;
-    model = [2 1 1];%unity judgement model
     model_ind = ismember(vertcat(m.models{:}),model,'rows');
-    fit_dist = m.fit_dist{model_ind};
-    responses = m.responses{model_ind};
+    if model(2) == 3
+        responses = m.responses{model_ind}{1};
+        fit_dist = m.fit_dist{model_ind}{1};
+    else
+        responses = m.responses{model_ind};
+        fit_dist = m.fit_dist{model_ind};
+    end
     conditions = m.conditions{model_ind};
     all_resp(:,si) = responses(:,1)./sum(responses,2); %just take the percent single (
     %plot_psingle(responses,conditions,fit_dist);
@@ -100,13 +105,13 @@ end
 end
 
 
-%% plot 3: localization plots + models, rescaled and sized for nice figures
-subject = 'H06';
-tar_pairs = {[-12,-12];[-12, -18];[-12,-24]};
+%% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
+subject = 'Juno';
+tar_pairs = {[-6,-6];[-6, -18];[-6,-24]};
 % set desired model and range
-model = [1 3 1];
+model = [1 3 3];
 
-m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
+m=load(sprintf('results\\fit_to_all\\modelfits\\%s_m.mat',subject));
 m=m.m;
 
 xlocs = m.fitoptions.eval_midpoints;
@@ -145,7 +150,7 @@ for pind = 1:length(tar_pairs)
     plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
     
     title(sprintf('%d A, %d V, %s', tar_pair,subject));
-    legend('Single Sac','A sac','V sac','Modeled','Location','Best');
+    legend('Single Sac','A sac','V sac','Model','Location','Best');
     xlabel('endpoint location (degrees)');
     ylabel('% saccades in bin')
     set(gca,'box','off')
@@ -155,26 +160,27 @@ for pind = 1:length(tar_pairs)
     %xlim([min_tar - 15, max_tar + 15])
     xlim([-30,10])
 end
-    saveas(gcf,sprintf('%s\\loc\\locex_%s_combined%d%d%d',figpath,subject,model),'png');
+    saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
 
 %% plot 4 perform model comparison and make plots
 
 %n params is 5 for all models except the probabilistic fusion model in the
 %unity judgement case
-
 subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
-
-aic = zeros(length(subject_list),3);% number of models needed
+n_models = 3;
+aic = zeros(length(subject_list),n_models);% number of models needed
 bic = aic;
+models =[1 3 1; 1 3 2; 1 3 3];
 nparams = [5, 5, 5];
-clear models
 for i= 1:length(subject_list)
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));
     m=m.m;
-    %models(i,:) = cellfun(@mat2str,m.models,'UniformOutput',0);
-    models(i,:)=m.models;
-    nll = horzcat(m.nll{:});
-    nobs = sum(m.responses{1}{1,1}(:));
+    model_ind = ismember(vertcat(m.models{:}),models,'rows');
+    nll=m.nll(model_ind);
+    %sum nll across k folds for each model
+    nll=[cell2mat(nll{1,1}),cell2mat(nll{1,2}),cell2mat(nll{1,3})];
+    nll = sum(nll,1);
+    nobs = sum(m.responses{model_ind(1)}{1,1}(:));
     [aic(i,:),bic(i,:)] = aicbic(-nll,nparams,nobs);
 end
 
@@ -195,33 +201,49 @@ dif_bic = array2table(dif_bic);
 dif_bic.Properties.VariableNames = {'MS','PF'};
 dif_bic.Properties.RowNames = subject_list;
 
-% 
-% % plot results
-% figure;
-% % sc_plot = scatter(unity_dif_BIC,ones(length(subject_list),1),100);
-% % sc_plot.CData = 1:length(subject_list);
-% % sc_plot.MarkerFaceColor = 'flat';
-% % sc_plot.MarkerFaceAlpha = 0.5;
-% sc_plot = scatter(loc_dif_BIC,ones(length(subject_list),1)*2,100);
-% sc_plot.CData = 1:length(subject_list);
-% sc_plot.MarkerFaceColor = 'flat';
-% sc_plot.MarkerFaceAlpha = 0.5;
-% % labeled_data = [unity_dif_BIC, ones(length(subject_list),1)];
-% labeled_data = [loc_dif_BIC,ones(length(subject_list),1)*2];
-% % boxplot(labeled_data(:,1),labeled_data(:,2), 'orientation', 'horizontal','plotstyle','compact','Colors','k','Labels',{'unity','loc'});
-% xlabel('BIC difference between bayesian and force fusion model')
-% plot([0 0], [0,3],'LineWidth',2,'Color',[0 0 0 .5])
-% ylim([0 3])
-% title('Evidence for segregating model vs CI model')
-% saveas(gcf,sprintf('%s\bic_dif',figpath),'png');
-% 
+% plot results
+figure;
+sc_plot = scatter(dif_bic{:,1},ones(length(subject_list),1),100);
+sc_plot.CData = 1:length(subject_list);
+sc_plot.MarkerFaceColor = 'flat';
+sc_plot.MarkerFaceAlpha = 0.5;
+hold on
+sc_plot = scatter(dif_bic{:,2},ones(length(subject_list),1)*2,100);
+sc_plot.CData = 1:length(subject_list);
+sc_plot.MarkerFaceColor = 'flat';
+sc_plot.MarkerFaceAlpha = 0.5;
+labeled_data = [dif_bic{:,1}, ones(length(subject_list),1)];
+labeled_data = [labeled_data;dif_bic{:,2},ones(length(subject_list),1)*2];
+ boxplot(labeled_data(:,1),labeled_data(:,2), 'orientation', 'horizontal','plotstyle','compact','Colors','k','Labels',{'MS','PF'});
+xlabel('BIC difference (BB - model)')
+plot([0 0], [0,3],'LineWidth',2,'Color',[0 0 0 .5])
+ylim([0 3])
+title('Evidence for Bayes/Bayes model vs alternatives')
+saveas(gcf,sprintf('%s\\bic_dif',figpath),'png');
 
 
 
+%% table 1 - table of model fit parameters
 
+subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+model =[1 3 1];
+n_params = 5;
+params = zeros(length(subject_list),n_params);
 
+for i= 1:length(subject_list)
+    m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));
+    m=m.m;
+    model_ind = ismember(vertcat(m.models{:}),model,'rows');
+    thetas =m.thetas(model_ind);
+    %sum nll across k folds for each model
+    thetas=cellfun(@cell2mat,thetas,'UniformOutput',0);
+    mean_thetas = cellfun(@mean,thetas,'UniformOutput',0);
+    params(i,:) = mean_thetas{:};
+end
 
-
+param_table = array2table(params);
+param_table.Properties.VariableNames ={'V_sig','A_sig','p_sig','p_common','lambda'};
+param_table.Properties.RowNames = subject_list;
 
 
 

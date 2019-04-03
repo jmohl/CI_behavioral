@@ -22,9 +22,12 @@ valid_data = raw_data(logical(raw_data.valid_tr),:);
 %omit trials without valid endpoints, very rarely removes data
 data = valid_data(~cellfun('isempty',valid_data.valid_endpoints),:);
 
-%% split data into train and test sets TODO
-%[AV_train,AV_test] = get_train_test(data,CI_opts.k_folds,fixed_params.AV_pairs);
 
+
+%% split data into train and test sets
+if fitoptions.cross_validate
+[AV_train,AV_test] = get_train_test(data,fitoptions.kfolds);
+end
 %% CI model (new)
 clear m;
 %load saved modelfits, if exist
@@ -41,16 +44,39 @@ for mi = 1:size(model_list,1)
         fprintf('skipping model [%d %d %d] because already saved \n',model_list{mi})
         continue
     end
-    model = model_list{mi}; 
-    fprintf('Fitting Subject: %s, Model: %d %d %d\n',subject,model)
-    m.models{mi} = model;
-    [conditions,responses] = get_prepro_data(data,model,fitoptions);
-    [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model,fitoptions);
-    m.thetas{mi} = fit_theta;
-    m.nll{mi} = fit_nll;
-    m.fit_dist{mi} = fit_dist;
-    m.conditions{mi} = conditions;
-    m.responses{mi} = responses;
+    if fitoptions.cross_validate % if using cross validation
+        fit_theta = cell(fitoptions.kfolds,1);
+        fit_dist = cell(fitoptions.kfolds,1);
+        test_nll = cell(fitoptions.kfolds,1);
+        model = model_list{mi};
+        for ki = 1:fitoptions.kfolds
+            tic
+            train_data = AV_train{ki};
+            test_data = AV_test{ki};
+            fprintf('Fitting Subject: %s, Model: %d %d %d, k-fold:%d\n',subject,model, ki)
+            [conditions,responses] = get_prepro_data(train_data,model,fitoptions);
+            [fit_theta{ki},~,fit_dist{ki}]=fitmodel(conditions,responses,model,fitoptions);
+            [conditions,responses] = get_prepro_data(test_data,model,fitoptions);
+            test_nll{ki} = datalike(conditions,responses,fit_theta{ki},model,fitoptions.eval_midpoints);
+            toc
+        end
+            m.models{mi} = model;
+            m.thetas{mi} = fit_theta;
+            m.nll{mi} = test_nll;
+            m.fit_dist{mi} = fit_dist;
+            [m.conditions{mi},m.responses{mi}] = get_prepro_data(data,model,fitoptions); %for conditions and responses (used for plotting), return whole dataset
+    else
+        model = model_list{mi}; 
+        fprintf('Fitting Subject: %s, Model: %d %d %d\n',subject,model)
+        m.models{mi} = model;
+        [conditions,responses] = get_prepro_data(data,model,fitoptions);
+        [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model,fitoptions);
+        m.thetas{mi} = fit_theta;
+        m.nll{mi} = fit_nll;
+        m.fit_dist{mi} = fit_dist;
+        m.conditions{mi} = conditions;
+        m.responses{mi} = responses;
+    end
     
     %save out model struct
     save(sprintf('results\\modelfits\\%s_m',subject),'m');

@@ -23,7 +23,20 @@ MAXRNG = 50;
 binsize = 1; %size of bins used for responses, in degrees.
 
 % set models to be run
-%model list
+
+%% next time running all models, refactor the model list in this way to make it more sensical
+%new model list
+% [1 x 1] = bayesian CI (1) no combination (x) unity judgement task(1)
+% [2 x 1] = probabilistic fusion (2) no combination (x) unity (1)
+% [1 1 2] = bayesian CI (1) with reweighting (1) localization task(2)
+% [2 1 2] = probabilistic fusion (2) with reweighting (1) localization(2) 
+% [1 1 3] = bayesian CI (1) reweighting(1) joint fit(3) 
+% [1 2 3] = bayesian CI (1) model selection(2) joint fit(3)
+% [1 3 3] = bayesian CI (1) probabilistic fusion(3) joint fit(3)
+
+% model_list = {[1 0 1]; [2 0 1]; [1 1 2]; [2 1 2]; [1 1 3]; [1 2 3]; [1 3 3]};
+
+%old model list
 % [1 1 x] = bayesian CI (1) unity judgement(1)
 % [2 1 x] = probabilistic fusion (2) unity (1)
 % [1 2 1] = bayesian CI (1) localization(2) with reweighting (1)
@@ -31,19 +44,20 @@ binsize = 1; %size of bins used for responses, in degrees.
 % [1 3 1] = bayesian CI (1) joint fit(3) reweighting(1)
 % [1 3 2] = bayesian CI (1) joint fit(3) model selection(2)
 % [1 3 3] = bayesian CI (1) joint fit(3) probabilistic fusion(3)
+model_list = {[1 1 0]; [2 1 0]; [1 2 1]; [2 2 1]; [1 3 1]; [1 3 2]; [1 3 3]};
 
-%3/6/19 JM getting rid of numerical integration because I don't actually
-%think that works, also not running the joint fit right now
-model_list = {[1 3 1]; [1 3 2];[1 3 3]};
 %setting fitting procedure options
 fitoptions.load_saved_fits = 1; %load saved fits, if they exist
 fitoptions.make_plots = 0;
-fitoptions.UBND = [15 15 40 .9 .9]; %upper bounds on theta for grid search
-fitoptions.LBND = [1 1 1 .1 0]; %lower bounds on theta
+fitoptions.n_iterations = 1; %set option to repeat fminsearch for n times
+fitoptions.UBND = [15 15 40 .9 .5]; %upper bounds on theta for grid search
+fitoptions.LBND = [1 1 5 .1 .01]; %lower bounds on theta for grid search
 fitoptions.grid_fineness = 3; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 
-fitoptions.fmin_options = optimset('MaxFunEvals',1500,'MaxIter',1000);
+fitoptions.fmin_options = optimset('MaxFunEvals',1000,'MaxIter',1000, 'TolFun', 1e-2, 'TolX',1e-2);
 fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/binsize + 1); %note can adjust fineness of binning here if wanted. This makes 1 degree bins
 fitoptions.eval_midpoints = linspace(-MAXRNG+binsize/2,MAXRNG-binsize/2,length(fitoptions.eval_range)-1);
+fitoptions.cross_validate = 1;
+fitoptions.kfolds = 5;
 
 %todo:fix this
 run_days_separately = 0;
@@ -54,7 +68,7 @@ if ~exist('results\modelfits', 'dir')
 end
 
 % load example day, for testing
- subject_list = {'Juno'};
+% subject_list = {'Juno'};
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};

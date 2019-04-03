@@ -51,6 +51,7 @@ debug = 0;
 % timeit(f)
 datalike_minsearch = @(theta)datalike(conditions,responses,theta,model,eval_midpoints);
 
+n_iter = fitoptions.n_iterations;
 %step 1: evaluate likelihood at all values on grid, pick 5 best points
 fprintf('Step 1:grid search\n')
 theta_range = zeros(length(UBND),grid_fineness);
@@ -64,7 +65,7 @@ for grid_pt = 1:numel(t1)
     grid_like(grid_pt) = datalike_minsearch(this_theta);
 end
 [~,min_inds] = sort(grid_like(:));
-best_thetas =[t1(min_inds(1:5)) t2(min_inds(1:5)) t3(min_inds(1:5)) t4(min_inds(1:5)) t5(min_inds(1:5))];
+best_thetas =[t1(min_inds(1:n_iter)) t2(min_inds(1:n_iter)) t3(min_inds(1:n_iter)) t4(min_inds(1:n_iter)) t5(min_inds(1:n_iter))];
 
 %step 2: use best grid params as starting point for fminsearch. 
 fit_thetas = zeros(size(best_thetas));
