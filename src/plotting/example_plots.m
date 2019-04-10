@@ -58,50 +58,62 @@ for data_ind = 1:3
     si=1;
     all_resp = zeros(20,length(this_subjects));
     all_fits = all_resp;
-for subject = this_subjects
-    m = load(sprintf('results\\fit_to_all\\modelfits\\%s',subject{:}));
-    m=m.m;
-    model_ind = ismember(vertcat(m.models{:}),model,'rows');
-    if model(2) == 3
-        responses = m.responses{model_ind}{1};
-        fit_dist = m.fit_dist{model_ind}{1};
-    else
-        responses = m.responses{model_ind};
-        fit_dist = m.fit_dist{model_ind};
+    for subject = this_subjects
+        m = load(sprintf('results\\fit_to_all\\modelfits\\%s',subject{:}));
+        m=m.m;
+        model_ind = ismember(vertcat(m.models{:}),model,'rows');
+        if model(2) == 3
+            responses = m.responses{model_ind}{1};
+            fit_dist = m.fit_dist{model_ind}{1};
+        else
+            responses = m.responses{model_ind};
+            fit_dist = m.fit_dist{model_ind};
+        end
+        conditions = m.conditions{model_ind};
+        all_resp(:,si) = responses(:,1)./sum(responses,2); %just take the percent single (
+        %plot_psingle(responses,conditions,fit_dist);
+        all_fits(:,si) = fit_dist(:,1);
+        si = si +1;
     end
-    conditions = m.conditions{model_ind};
-    all_resp(:,si) = responses(:,1)./sum(responses,2); %just take the percent single (
-    %plot_psingle(responses,conditions,fit_dist);
-    all_fits(:,si) = fit_dist(:,1);
-    si = si +1;
-end
-
-mean_fit =  mean(all_fits,2); % TODO confidence interval instead at some point?
-mean_resp = mean(all_resp,2);
-std_resp = std(all_resp,0,2);
-sem_resp = std_resp / sqrt(length(this_subjects));
-
-% split data by condition, 24 or 6 aud tar, for easier visualization
-A_tars = unique(abs(conditions(:,1)));
-for A_tar = A_tars'
-    figure
-    pos_inds = conditions(:,1) == A_tar;
-    neg_inds = conditions(:,1) == -A_tar;
-    v_tar = conditions(pos_inds,2); %using visual target location ,will almost certainly change in future but this provides maximum information
-    p = errorbar(v_tar,mean_resp(pos_inds),sem_resp(pos_inds),'LineWidth',2);
-    hold on;
-    plot(v_tar,mean_fit(pos_inds),'LineWidth',2,'Color',p.Color,'LineStyle','--');
     
-    v_tar = conditions(neg_inds,2);
-    p = errorbar(v_tar,mean_resp(neg_inds),sem_resp(neg_inds),'LineWidth',2);
-    plot(v_tar,mean_fit(neg_inds),'LineWidth',2,'Color',p.Color,'LineStyle','--');
-    title(sprintf('Single saccade ratio by tar sep (%s):\\pm %d Aud loc',data_labels{data_ind},A_tar),'Interpreter','tex')
-    ylabel('percent single saccade')
-    xlabel('Vis target location')
-    set(gca,'box','off')
-    %set(gcf,'Position',[100,60,1049,895])
-    saveas(gcf,sprintf('%s\\psing_%s_%dA',figpath,data_labels{data_ind},A_tar),'png');
-end
+    %group values by target separation %TODO
+    %sep = conditions(:,1) - conditions(:,2);
+    %[sep_g, sep_val] = findgroups(sep);
+    
+    mean_fit =  mean(all_fits,2); %mean across humans
+    fit_CI_int = 1.96 * std(all_fits,0,2)/size(this_subjects,2); % 95% confidence interval
+    mean_resp = mean(all_resp,2);
+    std_resp = std(all_resp,0,2);
+    sem_resp = std_resp / sqrt(length(this_subjects));
+    
+    % split data by condition, 24 or 6 aud tar, for easier visualization
+    A_tars = unique(abs(conditions(:,1)));
+    for A_tar = A_tars'
+        figure
+        hold on;
+        pos_inds = conditions(:,1) == A_tar;
+        neg_inds = conditions(:,1) == -A_tar;
+        v_tar = conditions(pos_inds,2); %using visual target location ,will almost certainly change in future but this provides maximum information
+        for subj = 1:size(this_subjects,2)
+            %plotting individual responses
+            plot(conditions(pos_inds,2),all_resp(pos_inds,subj),'LineWidth',.5,'Color',[.9,.9,.9],'LineStyle','-');
+            plot(conditions(neg_inds,2),all_resp(neg_inds,subj),'LineWidth',.5,'Color',[.9,.9,.9],'LineStyle','-');
+        end
+        p = errorbar(v_tar,mean_resp(pos_inds),sem_resp(pos_inds),'LineWidth',2);
+        plot(v_tar,mean_fit(pos_inds),'LineWidth',2,'Color',p.Color,'LineStyle','--');
+        %plot(v_tar,mean_fit(pos_inds)+fit_CI_int(pos_inds),'LineWidth',1,'Color',p.Color,'LineStyle','-');
+        %plot(v_tar,mean_fit(pos_inds)-fit_CI_int(pos_inds),'LineWidth',1,'Color',p.Color,'LineStyle','-');
+        v_tar = conditions(neg_inds,2);
+        p = errorbar(v_tar,mean_resp(neg_inds),sem_resp(neg_inds),'LineWidth',2);
+        plot(v_tar,mean_fit(neg_inds),'LineWidth',2,'Color',p.Color,'LineStyle','--');
+        title(sprintf('Single saccade ratio by tar sep (%s):\\pm %d Aud loc',data_labels{data_ind},A_tar),'Interpreter','tex')
+        ylabel('percent single saccade')
+        xlabel('Vis target location')
+        set(gca,'box','off')
+        %set(gcf,'Position',[100,60,1049,895])
+        saveas(gcf,sprintf('%s\\psing_%s_%dA',figpath,data_labels{data_ind},A_tar),'png');
+    end
+
 end
 
 
@@ -117,11 +129,11 @@ m=m.m;
 xlocs = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
 if model(2) == 3
-saccades_all = m.responses{model_ind}{2};
-predicted_all = m.fit_dist{model_ind}{2};
+    saccades_all = m.responses{model_ind}{2};
+    predicted_all = m.fit_dist{model_ind}{2};
 else
-saccades_all = m.responses{model_ind};
-predicted_all = m.fit_dist{model_ind};
+    saccades_all = m.responses{model_ind};
+    predicted_all = m.fit_dist{model_ind};
 end
 conditions = m.conditions{model_ind};
 
@@ -160,7 +172,7 @@ for pind = 1:length(tar_pairs)
     %xlim([min_tar - 15, max_tar + 15])
     xlim([-30,10])
 end
-    saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
+saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
 
 %% plot 4 perform model comparison and make plots
 
@@ -186,7 +198,7 @@ end
 
 %get model names using model values
 model_names = get_model_names(models);
-    
+
 aic_table = array2table(aic);
 aic_table.Properties.VariableNames = strcat(model_names,'_AIC');
 bic_table =   array2table(bic);
@@ -214,7 +226,7 @@ sc_plot.MarkerFaceColor = 'flat';
 sc_plot.MarkerFaceAlpha = 0.5;
 labeled_data = [dif_bic{:,1}, ones(length(subject_list),1)];
 labeled_data = [labeled_data;dif_bic{:,2},ones(length(subject_list),1)*2];
- boxplot(labeled_data(:,1),labeled_data(:,2), 'orientation', 'horizontal','plotstyle','compact','Colors','k','Labels',{'MS','PF'});
+boxplot(labeled_data(:,1),labeled_data(:,2), 'orientation', 'horizontal','plotstyle','compact','Colors','k','Labels',{'MS','PF'});
 xlabel('BIC difference (BB - model)')
 plot([0 0], [0,3],'LineWidth',2,'Color',[0 0 0 .5])
 ylim([0 3])
