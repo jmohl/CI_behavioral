@@ -12,17 +12,17 @@ for i = 1:size(models,1)
     model_str = [];
     switch models(i,1) %unity judgement type
         case 1
-            model_str = 'B'; 
+            model_str = 'B'; %bayesian, decision threshold at 0.5
         case 2
-            model_str = 'PF';
+            model_str = 'PF'; %probabilistic fusion
     end
     switch models(i,3) %location judgement type
         case 1
-            model_str = strcat(model_str,'_B');
+            model_str = strcat(model_str,'_B'); %bayesian reweighting
         case 2
-            model_str = strcat(model_str,'_MS');
+            model_str = strcat(model_str,'_MS'); %model selection
         case 3
-            model_str = strcat(model_str,'_PF');
+            model_str = strcat(model_str,'_PF'); %probabilistic fusion
     end
     switch models(i,2)  %fit type
         case 1

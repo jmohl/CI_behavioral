@@ -56,12 +56,11 @@ fitoptions.grid_fineness = 3; %number of points per parameter in grid search, re
 fitoptions.fmin_options = optimset('MaxFunEvals',1000,'MaxIter',1000, 'TolFun', 1e-2, 'TolX',1e-2);
 fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/binsize + 1); %note can adjust fineness of binning here if wanted. This makes 1 degree bins
 fitoptions.eval_midpoints = linspace(-MAXRNG+binsize/2,MAXRNG-binsize/2,length(fitoptions.eval_range)-1);
-fitoptions.cross_validate = 1;
+fitoptions.cross_validate = 0;
 fitoptions.kfolds = 5;
 
 %todo:fix this
 run_days_separately = 0;
-
 
 if ~exist('results\modelfits', 'dir')
     mkdir('results\modelfits')

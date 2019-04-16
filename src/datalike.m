@@ -30,10 +30,10 @@ function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 % Causal inference type
 CI_type = model(1);
 %localization strategy
-combination_rule = model(2); %rule for combining sensory inputs, based on causal judgement 
+combination_rule = model(3); %rule for combining sensory inputs, based on causal judgement 
 %task type
-unity_judge = model(3) == 1;
-location_estimate = model(3) == 2;
+unity_judge = model(2) == 1;
+location_estimate = model(2) == 2;
 if model(2) == 3 %do joint fit
     unity_judge = 1;
     location_estimate = 1;

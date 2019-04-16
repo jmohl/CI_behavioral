@@ -40,7 +40,6 @@ addpath('src', 'src\plotting','data');
 
 data = load('data\Yoko_combined.mat');
 data=data.tidy_data;
-data = accuracy_filter(data);
 data = data(logical(data.valid_tr),:);
 data = data(data.n_sacs > 0,:);
 
@@ -77,10 +76,6 @@ AV_A_fits = splitapply(tempfit, AV_A_resp(:,3),AV_A_g);
 AV_V_fits = splitapply(tempfit, AV_V_resp(:,3),AV_V_g);
 AV_C_fits = splitapply(tempfit, AV_C_resp(:,3),AV_C_g);
 
-%find outliers in V data
-% temp_outlier = @(x1){isoutlier(x1)};
-% test3 = splitapply(temp_outlier,AV_V_resp(:,3),AV_V_g);
-% cellfun(@sum,test3)
 %% make plots
 %notes: outliers make my norm_pdf fits worse than expected, Yoko behavior
 %looks way better than Juno on this, much more accurate.
@@ -107,6 +102,22 @@ title(sprintf('%d A \n %2.2f mu, %2.2f sig',A_tars(this_fit),A_fits(this_fit).Pa
 legend('Norm fit','Saccades','target loc')
 end
 
+%% Summarize unimodal conditions with box plots
+%mean model fits
+mean(vertcat(A_fits(:).ParameterValues))
+mean(vertcat(V_fits(:).ParameterValues))
+mean(vertcat(AV_A_fits(:).ParameterValues))
+
+mean(vertcat(AV_V_fits(:).ParameterValues))
+
+figure
+subplot(2,1,1)
+boxplot(A_responses(:,2),A_responses(:,1))
+subplot(2,1,2)
+boxplot(V_responses(:,2),V_responses(:,1))
+
+sig1 = 8.04; sig2 = 12.83;
+sig3 = 1/(1/sig1+ 1/sig2)
 %% AV condition, split up by target
 for this_fit = 1:length(AV_A_fits)
 figure
@@ -122,7 +133,7 @@ end
 for this_fit = 1:length(AV_V_fits)
 figure
 V_plot = pdf(AV_V_fits(this_fit),plot_range);
-plot(plot_range,A_plot,'k')
+plot(plot_range,V_plot,'k')
 hold on
 histogram(AV_V_fits(this_fit).InputData.data,plot_range,'Normalization','probability')
 plot([AV_V_tars(this_fit) AV_V_tars(this_fit)],[0 max(V_plot)],'--k','LineWidth',2)
@@ -132,11 +143,11 @@ end
 
 for this_fit = 1:length(AV_C_fits)
 figure
-A_plot = pdf(AV_C_fits(this_fit),plot_range);
-plot(plot_range,A_plot,'k')
+C_plot = pdf(AV_C_fits(this_fit),plot_range);
+plot(plot_range,C_plot,'k')
 hold on
 histogram(AV_C_fits(this_fit).InputData.data,plot_range,'Normalization','probability')
-plot([AV_V_tars(this_fit) AV_V_tars(this_fit)],[0 max(A_plot)],'--k','LineWidth',2)
+plot([AV_V_tars(this_fit) AV_V_tars(this_fit)],[0 max(C_plot)],'--k','LineWidth',2)
 title(sprintf('%dV AV single \n %2.2f mu, %2.2f sig',AV_V_tars(this_fit),AV_C_fits(this_fit).ParameterValues))
 legend('Norm fit','Saccades','target loc')
 end

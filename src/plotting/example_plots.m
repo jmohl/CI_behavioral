@@ -22,7 +22,7 @@ figpath = 'results\figures';
 m=load('results\modelfits\Juno_m.mat');
 m=m.m;
 % set desired model and range
-model = [2 1 2];%keep an eye on this in the future, might change
+model = [1 2 1];%keep an eye on this in the future, might change
 locations = m.fitoptions.eval_range;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
 
@@ -45,13 +45,13 @@ end
 
 %build unity judgement array of response/fit vectors
 subjects_H = {'H02_m.mat' 'H03_m.mat' 'H04_m.mat' 'H05_m.mat' 'H06_m.mat' 'H07_m.mat' 'H08_m.mat'};
-J_files = struct2cell(dir('results\fit_to_all\modelfits\Juno*'));
+J_files = struct2cell(dir('results\modelfits\Juno*'));
 subjects_J = J_files(1,:);
-Y_files = struct2cell(dir('results\fit_to_all\modelfits\Yoko*'));
+Y_files = struct2cell(dir('results\modelfits\Yoko*'));
 subjects_Y = Y_files(1,:);
 subjects = {subjects_H,subjects_J,subjects_Y};
 data_labels = {'Human','J','Y'};
-model = [1 3 1];%joint fit model
+model = [2 1 0];%joint fit model
 
 for data_ind = 1:3
     this_subjects = subjects{data_ind};
@@ -111,7 +111,7 @@ for data_ind = 1:3
         xlabel('Vis target location')
         set(gca,'box','off')
         %set(gcf,'Position',[100,60,1049,895])
-        saveas(gcf,sprintf('%s\\psing_%s_%dA',figpath,data_labels{data_ind},A_tar),'png');
+        saveas(gcf,sprintf('%s\\psing_%s_%dA_%s',figpath,data_labels{data_ind},A_tar,string(get_model_names(model))),'png');
     end
 
 end
@@ -121,7 +121,7 @@ end
 subject = 'Juno';
 tar_pairs = {[-6,-6];[-6, -18];[-6,-24]};
 % set desired model and range
-model = [1 3 3];
+model = [1 3 2];
 
 m=load(sprintf('results\\fit_to_all\\modelfits\\%s_m.mat',subject));
 m=m.m;
@@ -239,23 +239,32 @@ saveas(gcf,sprintf('%s\\bic_dif',figpath),'png');
 
 subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 model =[1 3 1];
-n_params = 5;
 params = zeros(length(subject_list),n_params);
+params_sd = params;
 
 for i= 1:length(subject_list)
-    m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));
+    m=load(sprintf('results\\cross_validated\\modelfits\\%s_m.mat',subject_list{i}));%This code is meant to be run on the cross validated data
     m=m.m;
     model_ind = ismember(vertcat(m.models{:}),model,'rows');
-    thetas =m.thetas(model_ind);
+    thetas =m.thetas(model_ind); 
     %sum nll across k folds for each model
     thetas=cellfun(@cell2mat,thetas,'UniformOutput',0);
     mean_thetas = cellfun(@mean,thetas,'UniformOutput',0);
+    std_thetas = cellfun(@std,thetas,'UniformOutput',0);
     params(i,:) = mean_thetas{:};
+    params_sd(i,:) = std_thetas{:}; %not actually sure this is what I want. Might want the standard deviation of the mean values rather than the std of the estimates across folds.
 end
 
 param_table = array2table(params);
 param_table.Properties.VariableNames ={'V_sig','A_sig','p_sig','p_common','lambda'};
 param_table.Properties.RowNames = subject_list;
+
+param_sd_table = array2table(params_sd);
+param_sd_table.Properties.VariableNames ={'V_sig','A_sig','p_sig','p_common','lambda'};
+param_sd_table.Properties.RowNames = subject_list;
+
+human_table = param_table(3:end,:);
+grpstats(human_table,[],{'mean','std'})
 
 
 

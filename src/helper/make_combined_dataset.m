@@ -10,6 +10,8 @@
 % impossible. Instead here I am pooling days once, and saving that as a new
 % data file for use in the model.
 
+% note that the folder needs to be set to the CI_behavioral project for
+% this to run properly.
 
 %pool for juno
 subject = 'Juno';
