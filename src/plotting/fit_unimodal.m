@@ -117,7 +117,10 @@ subplot(2,1,2)
 boxplot(V_responses(:,2),V_responses(:,1))
 
 sig1 = 8.04; sig2 = 12.83;
-sig3 = 1/(1/sig1+ 1/sig2)
+sig3 = sqrt(1/(1/sig1^2+ 1/sig2^2)) %bayesian integration
+mu1 = 24; mu2 = 0;
+mu3 = (mu1*sig2^2 + mu2 * sig1^2)/(sig1^2 + sig2^2);
+
 %% AV condition, split up by target
 for this_fit = 1:length(AV_A_fits)
 figure

@@ -91,20 +91,19 @@ if location_estimate
     % combine likelihoods weighted by posterior on common cause
     switch combination_rule
         case 1 %if bayesian reweighting
-            AV_c1_pdf = bsxfun(@times,c1post, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.
+            V_c1_pdf = bsxfun(@times,c1post, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.
             V_c2_pdf = bsxfun(@times,(1-c1post), V_seg_pdf);
+            A_c1_pdf = bsxfun(@times,c1post, int_pdf);
             A_c2_pdf = bsxfun(@times,(1-c1post), A_seg_pdf);
         case 2 %if model selection, choose the best model and use that one exclusively (set weight on alternative to 0)
             w1_unity = zeros(size(c1post));
             w1_unity(c1post > 0.5) = 1;
-            AV_c1_pdf = bsxfun(@times,w1_unity, int_pdf);
-            V_c2_pdf = bsxfun(@times,(1-w1_unity), V_seg_pdf);
-            A_c2_pdf = bsxfun(@times,(1-w1_unity), A_seg_pdf);
+            V_c1c2_pdf = bsxfun(@times,w1_unity, int_pdf) + bsxfun(@times,(1-w1_unity), V_seg_pdf);
+            A_c1c2_pdf = bsxfun(@times,w1_unity, int_pdf) + bsxfun(@times,(1-w1_unity), A_seg_pdf);
         case 3 % probabilistic fusion, reweighting (covers possibility of always integrate/always segregate)
             fixed_weights = repmat(p_common,1,length(xrange),length(xrange)); %weights are fixed at the prior probability of one cause trials (fit to data) %JM might make this free parameter
-            AV_c1_pdf = bsxfun(@times,fixed_weights, int_pdf);
-            V_c2_pdf = bsxfun(@times,(1-fixed_weights), V_seg_pdf);
-            A_c2_pdf = bsxfun(@times,(1-fixed_weights), A_seg_pdf);
+            V_c1c2_pdf = bsxfun(@times,fixed_weights, int_pdf) + bsxfun(@times,(1-fixed_weights), V_seg_pdf);
+            A_c1c2_pdf = bsxfun(@times,fixed_weights, int_pdf) + bsxfun(@times,(1-fixed_weights), A_seg_pdf);
         case 4 % probability matching
             
             
@@ -132,7 +131,7 @@ if unity_judge
 end
 if location_estimate %this is the location estimate when cause is unknown. Not sure if right.
     prmat_est_AV_c1 = zeros(numel(conds_V), length(xrange));
-    prmat_est_AV_c1(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), AV_c1_pdf), 2), 3); %Estimate for single saccade conditions, same for sA and sV, so labeling AV
+    prmat_est_AV_c1(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), V_c1_pdf), 2), 3); %Estimate for single saccade conditions, same for sA and sV, so labeling AV
     
     prmat_est_V_c2 = zeros(numel(conds_V), length(xrange));
     prmat_est_V_c2(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), V_c2_pdf), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
@@ -149,8 +148,8 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_est_A = lambda/length(xrange) + (1-lambda)*prmat_est_A;
     prmat_est_AV = lambda/length(xrange) + (1-lambda)*prmat_est_AV;
 
-    prmat_est_A_reshape(:,1,1:size(prmat_est_A,2)) = prmat_est_A;
-    prmat_sac_c2 = bsxfun(@times,prmat_est_V,prmat_est_A_reshape);
+    prmat_est_A_reshape(:,1,1:size(prmat_est_A,2)) = prmat_est_A_c2;
+    prmat_sac_c2 = bsxfun(@times,prmat_est_V_c2,prmat_est_A_reshape);
     %diagonalize prmat_est_AV, so can be combined with the c2 estimates
     %which are 2d
     prmat_est_AV_diag = zeros(size(prmat_sac_c2));
@@ -159,6 +158,17 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     end
     prmat_sac = prmat_sac_c2 + prmat_est_AV_diag;
 end
+
+%% use simulation to get pdf to compare with data in each condition
+
+n_sim = 1000;
+for icond = 1:length(conditions)
+    
+xA_samp = normrnd(conds_A(icond), A_sig,n_sim,1);
+xV_samp = normrnd(conds_V(icond), V_sig,n_sim,1);
+
+end
+
 
 %% calculate negative log likelihood of data
 if unity_judge && location_estimate %when fitting jointly
