@@ -12,7 +12,7 @@
 
 
 %% set initial state
-local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
+local_directory = 'C:\Users\Jeff\Documents\GitHub\CI_behavioral\';
 cd(local_directory)
 addpath('src', 'src\plotting','results');
 figpath = 'results\figures';
@@ -67,7 +67,7 @@ end
 %% plot 2: unity judgement plots, average across subjects/days
 
 %build unity judgement array of response/fit vectors
-subjects_H = {'H02_m.mat' 'H03_m.mat' 'H04_m.mat' 'H05_m.mat' 'H06_m.mat' 'H07_m.mat' 'H08_m.mat'};
+subjects_H = {'H02_m.mat' 'H03_m.mat' 'H04_m.mat' 'H05_m.mat' 'H06_m.mat'};% 'H07_m.mat' 'H08_m.mat'};
 J_files = struct2cell(dir('results\modelfits\Juno*'));
 subjects_J = J_files(1,:);
 Y_files = struct2cell(dir('results\modelfits\Yoko*'));
@@ -82,7 +82,7 @@ for data_ind = 1:3
     all_resp = zeros(20,length(this_subjects));
     all_fits = all_resp;
     for subject = this_subjects
-        m = load(sprintf('results\\fit_to_all\\modelfits\\%s',subject{:}));
+        m = load(sprintf('results\\modelfits\\%s',subject{:}));
         m=m.m;
         model_ind = ismember(vertcat(m.models{:}),model,'rows');
         if model(2) == 3
@@ -141,7 +141,7 @@ end
 
 
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subject = 'Juno';
+subject = 'Yoko';
 tar_pairs = {[-6,-6];[-6, -18];[-6,-24]};
 % set desired model and range
 model = [1 3 1];
@@ -197,7 +197,7 @@ end
 saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
 
 %% plot 3, take 2, plotting every pair from one side.
-subject = 'Juno';
+subject = 'Yoko';
 A_tars = [-24 -6];
 V_tars = [-24 -18 -12 -6 12];
 %A_tars = A_tars * -1; V_tars = V_tars * -1;
@@ -329,7 +329,7 @@ end
 
 %n params is 5 for all models except the probabilistic fusion model in the
 %unity judgement case
-subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06'};% 'H07' 'H08'};
 n_models = 3;
 aic = zeros(length(subject_list),n_models);% number of models needed
 bic = aic;
@@ -340,10 +340,15 @@ for i= 1:length(subject_list)
     m=m.m;
     model_ind = ismember(vertcat(m.models{:}),models,'rows');
     nll=m.nll(model_ind);
-    %sum nll across k folds for each model
-    nll=[cell2mat(nll{1,1}),cell2mat(nll{1,2}),cell2mat(nll{1,3})];
-    nll = sum(nll,1);
-    nobs = sum(m.responses{model_ind(1)}{1,1}(:));
+    %sum nll across k folds for each model, if relevant
+    if m.fitoptions.cross_validate
+        nll=[cell2mat(nll{1,1}),cell2mat(nll{1,2}),cell2mat(nll{1,3})];
+        nll = sum(nll,1);
+        nobs = sum(m.responses{model_ind(1)}{1,1}(:)); %maybe a bug here TODO
+    else
+        nll = cell2mat(nll);
+        nobs = sum(sum(m.responses{1},[]));
+    end
     [aic(i,:),bic(i,:)] = aicbic(-nll,nparams,nobs);
 end
 
@@ -388,22 +393,27 @@ saveas(gcf,sprintf('%s\\bic_dif',figpath),'png');
 
 %% table 1 - table of model fit parameters
 
-subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' };%'H07' 'H08'};
 model =[1 3 1];
+n_params= 5;
 params = zeros(length(subject_list),n_params);
 params_sd = params;
 
 for i= 1:length(subject_list)
-    m=load(sprintf('results\\cross_validated\\modelfits\\%s_m.mat',subject_list{i}));%This code is meant to be run on the cross validated data
+    m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));%This code is meant to be run on the cross validated data
     m=m.m;
     model_ind = ismember(vertcat(m.models{:}),model,'rows');
-    thetas =m.thetas(model_ind); 
-    %sum nll across k folds for each model
-    thetas=cellfun(@cell2mat,thetas,'UniformOutput',0);
-    mean_thetas = cellfun(@mean,thetas,'UniformOutput',0);
-    std_thetas = cellfun(@std,thetas,'UniformOutput',0);
-    params(i,:) = mean_thetas{:};
-    params_sd(i,:) = std_thetas{:}; %not actually sure this is what I want. Might want the standard deviation of the mean values rather than the std of the estimates across folds.
+    thetas =m.thetas(model_ind);
+    if m.fitoptions.cross_validate    %sum nll across k folds for each model
+        thetas=cellfun(@cell2mat,thetas,'UniformOutput',0);
+        mean_thetas = cellfun(@mean,thetas,'UniformOutput',0);
+        std_thetas = cellfun(@std,thetas,'UniformOutput',0);
+        params(i,:) = mean_thetas{:};
+        params_sd(i,:) = std_thetas{:}; %not actually sure this is what I want. Might want the standard deviation of the mean values rather than the std of the estimates across folds.
+    else
+        params(i,:) = thetas{:};
+        params_sd(i,:) = std(thetas{:});        
+    end
 end
 
 param_table = array2table(params);
