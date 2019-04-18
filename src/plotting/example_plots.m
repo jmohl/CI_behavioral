@@ -12,7 +12,7 @@
 
 
 %% set initial state
-local_directory = 'C:\Users\Jeff\Documents\GitHub\CI_behavioral\';
+local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
 cd(local_directory)
 addpath('src', 'src\plotting','results');
 figpath = 'results\figures';
@@ -22,7 +22,9 @@ end
 
 %% plot 1: example 2d joint distribution plots
 %load fit data
-m=load('results\modelfits\Juno_m.mat');
+
+subject = 'Yoko';
+m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 % set desired model and range
 model = [1 3 1];%keep an eye on this in the future, might change
@@ -43,10 +45,10 @@ for ic = ex_conds
     xlabel('Auditory Location')
     ylabel('Visual Location')
     title(sprintf('%d Aud, %d Vis pair', m.conditions{model_ind}(ic,:)))
-    saveas(gcf,sprintf('%s\\%dA%dV_pdf',figpath, m.conditions{model_ind}(ic,:)),'png');
+    saveas(gcf,sprintf('%s\\%s%dA%dV_pdf',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
 end
 
-%actual data 
+%actual data
 resp_dist = m.responses{model_ind};
 if length(resp_dist) > 1
     resp_dist = resp_dist{2};
@@ -61,20 +63,20 @@ for ic = ex_conds
     xlabel('Auditory Location')
     ylabel('Visual Location')
     title(sprintf('%d Aud, %d Vis pair', m.conditions{model_ind}(ic,:)))
-     saveas(gcf,sprintf('%s\\%dA%dV_resp',figpath, m.conditions{model_ind}(ic,:)),'png');
+    saveas(gcf,sprintf('%s\\%s%dA%dV_resp',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
 end
 
 %% plot 2: unity judgement plots, average across subjects/days
 
 %build unity judgement array of response/fit vectors
-subjects_H = {'H02_m.mat' 'H03_m.mat' 'H04_m.mat' 'H05_m.mat' 'H06_m.mat'};% 'H07_m.mat' 'H08_m.mat'};
+subjects_H = {'H02_m.mat' 'H03_m.mat' 'H04_m.mat' 'H05_m.mat' 'H06_m.mat' 'H07_m.mat' 'H08_m.mat'};
 J_files = struct2cell(dir('results\modelfits\Juno*'));
 subjects_J = J_files(1,:);
 Y_files = struct2cell(dir('results\modelfits\Yoko*'));
 subjects_Y = Y_files(1,:);
 subjects = {subjects_H,subjects_J,subjects_Y};
 data_labels = {'Human','J','Y'};
-model = [2 1 0];%joint fit model
+model = [1 1 0];%joint fit model
 
 for data_ind = 1:3
     this_subjects = subjects{data_ind};
@@ -136,69 +138,75 @@ for data_ind = 1:3
         %set(gcf,'Position',[100,60,1049,895])
         saveas(gcf,sprintf('%s\\psing_%s_%dA_%s',figpath,data_labels{data_ind},A_tar,string(get_model_names(model))),'png');
     end
-
+    
 end
 
 
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subject = 'Yoko';
-tar_pairs = {[-6,-6];[-6, -18];[-6,-24]};
+subjects = {'Juno','Yoko','H05','H03','H08'};
 % set desired model and range
-model = [1 3 1];
-m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
-m=m.m;
-
-xlocs = m.fitoptions.eval_midpoints;
-model_ind = ismember(vertcat(m.models{:}),model,'rows');
-if model(2) == 3
-    saccades_all = m.responses{model_ind}{2};
-    predicted_all = m.fit_dist{model_ind}{2};
-else
-    saccades_all = m.responses{model_ind};
-    predicted_all = m.fit_dist{model_ind};
-end
-conditions = m.conditions{model_ind};
-
-figure;
-set(gcf,'Position',[100,60,1600,500])
-for pind = 1:length(tar_pairs)
-    subplot(1,3,pind)
-    tar_pair = tar_pairs{pind};
-    this_ind = ismember(conditions,tar_pair,'rows');
-    saccades = saccades_all(this_ind,:,:);
-    predicted = predicted_all(this_ind,:,:);
-    norm_saccades=saccades/sum(saccades(:));
-    norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
-    %single saccades will be along the diagonal
-    I_mat = logical(eye([length(xlocs),length(xlocs)]));
-    sing_sacs = norm_saccades(:,I_mat);
-    norm_saccades(:,I_mat) = 0; %remove single saccades from norm sac mat.
-    A_sacs = sum(norm_saccades,2)/2; %divide by 2 to make probabilities sum to 1
-    V_sacs = sum(norm_saccades,3)/2;
-    sac_bar = bar(xlocs,[sing_sacs(:),A_sacs(:),V_sacs(:)],'stacked');%normalizing to probability
-    sac_bar(1).FaceColor = [.2 .2 .2];
-    sac_bar(2).FaceColor = [1 .5 .5];
-    sac_bar(3).FaceColor = [.5 .5 1];
-    hold on
-    projected_pred = (squeeze(sum(norm_predicted,2)) + squeeze(sum(norm_predicted,3))')/2; %divide by 2 to normalize
-    plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
+model = [1 3 2];
+for si = 1:length(subjects)
+    subject = subjects{si};
+    m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
+    m=m.m;
+    if contains(subject,'H')
+        tar_pairs = {[-24,-24];[-24, -18];[-24,-12];[-12,-24];[-12, -18];[-12,-12]}; %tar pairs for humans
+    else
+        tar_pairs = {[-24,-24];[-24, -12];[-24,-6];[-6,-24];[-6, -18];[-6,-6]};
+    end
     
-    title(sprintf('%d A, %d V, %s', tar_pair,subject));
-    legend('Single Sac','A sac','V sac','Model','Location','Best');
-    xlabel('endpoint location (degrees)');
-    ylabel('% saccades in bin')
-    set(gca,'box','off')
-    %set bounds that focus on the data instead of the whole range
-    %min_tar = min(tar_pair);
-    %max_tar = max(tar_pair);
-    %xlim([min_tar - 15, max_tar + 15])
-    xlim([-30,10])
+    xlocs = m.fitoptions.eval_midpoints;
+    model_ind = ismember(vertcat(m.models{:}),model,'rows');
+    if model(2) == 3
+        saccades_all = m.responses{model_ind}{2};
+        predicted_all = m.fit_dist{model_ind}{2};
+    else
+        saccades_all = m.responses{model_ind};
+        predicted_all = m.fit_dist{model_ind};
+    end
+    conditions = m.conditions{model_ind};
+    
+    figure;
+    set(gcf,'Position',[0,0,1600,1000])
+    for pind = 1:length(tar_pairs)
+        subplot(2,3,pind)
+        tar_pair = tar_pairs{pind};
+        this_ind = ismember(conditions,tar_pair,'rows');
+        saccades = saccades_all(this_ind,:,:);
+        predicted = predicted_all(this_ind,:,:);
+        norm_saccades=saccades/sum(saccades(:));
+        norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
+        %single saccades will be along the diagonal
+        I_mat = logical(eye([length(xlocs),length(xlocs)]));
+        sing_sacs = norm_saccades(:,I_mat);
+        norm_saccades(:,I_mat) = 0; %remove single saccades from norm sac mat.
+        A_sacs = sum(norm_saccades,2)/2; %divide by 2 to make probabilities sum to 1
+        V_sacs = sum(norm_saccades,3)/2;
+        sac_bar = bar(xlocs,[sing_sacs(:),A_sacs(:),V_sacs(:)],'stacked');%normalizing to probability
+        sac_bar(1).FaceColor = [.2 .2 .2];
+        sac_bar(2).FaceColor = [1 .5 .5];
+        sac_bar(3).FaceColor = [.5 .5 1];
+        hold on
+        projected_pred = (squeeze(sum(norm_predicted,2)) + squeeze(sum(norm_predicted,3))')/2; %divide by 2 to normalize
+        plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
+        
+        title(sprintf('%d A, %d V, %s', tar_pair,subject));
+        legend('Single Sac','A sac','V sac','Model','Location','Best');
+        xlabel('endpoint location (degrees)');
+        ylabel('% saccades in bin')
+        set(gca,'box','off')
+        %set bounds that focus on the data instead of the whole range
+        %min_tar = min(tar_pair);
+        %max_tar = max(tar_pair);
+        %xlim([min_tar - 15, max_tar + 15])
+        xlim([-30,10])
+    end
+    saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
 end
-saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
-
 %% plot 3, take 2, plotting every pair from one side.
-subject = 'Yoko';
-A_tars = [-24 -6];
+subject = 'H08';
+A_tars = [-24 -12];
 V_tars = [-24 -18 -12 -6 12];
 %A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
@@ -235,7 +243,7 @@ for V_tar = V_tars
         norm_saccades(:,I_mat) = 0; %remove single saccades from norm sac mat.
         A_sacs = sum(norm_saccades,2)/2; %sum over all V saccades, divide by 2 to make probabilities sum to 1
         V_sacs = sum(norm_saccades,3)/2;
-
+        
         sac_bar = bar(xlocs,[sing_sacs(:),A_sacs(:),V_sacs(:)],'stacked');%normalizing to probability
         sac_bar(1).FaceColor = [.2 .2 .2];
         sac_bar(2).FaceColor = [1 .5 .5];
@@ -243,7 +251,7 @@ for V_tar = V_tars
         hold on
         projected_pred = (squeeze(sum(norm_predicted,2)) + squeeze(sum(norm_predicted,3))')/2; %divide by 2 to normalize after marginalizing over both dimesions.
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
-
+        
         %title(sprintf('%d A, %d V, %s', tar_pair,subject));
         %legend('Single Sac','A sac','V sac','Model','Location','Best');
         xlabel(A_tar);
@@ -260,7 +268,7 @@ end
 saveas(gcf,sprintf('%s\\locex_%s_left_%s',figpath,subject,string(get_model_names(model))),'png');
 
 
-%% plot 3, take 3 now splitting up by auditory and visual fits.
+%% plot 4, splitting up to compare fits in each dimension
 subject = 'Yoko';
 A_tars = [-24 -6];
 V_tars = [-24 -18 -12 -6 12];
@@ -281,6 +289,9 @@ else
 end
 conditions = m.conditions{model_ind};
 
+try
+    mkdir(sprintf('%s\\split_by_type',figpath))
+end
 for V_tar = V_tars
     for A_tar = A_tars
         tar_pair = [A_tar,V_tar];
@@ -288,48 +299,60 @@ for V_tar = V_tars
         saccades = saccades_all(this_ind,:,:);
         predicted = predicted_all(this_ind,:,:);
         norm_saccades=saccades/sum(saccades(:));
-        norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
+        norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2; %normalize by bin size
+        % why does this some to less than 1? Something seems wrong.
         %single saccades will be along the diagonal
         I_mat = logical(eye([length(xlocs),length(xlocs)]));
         sing_sacs = norm_saccades(:,I_mat);
         norm_saccades(:,I_mat) = 0; %remove single saccades from norm sac mat.
         A_sacs = sum(norm_saccades,2)/2; %sum over all V saccades, divide by 2 to make probabilities sum to 1
         V_sacs = sum(norm_saccades,3)/2;
-
+        
         figure;
         set(gcf,'Position',[100,60,1600,500])
-
+        
         subplot(1,3,1)
         sac_bar = bar(xlocs,sing_sacs(:));
         sac_bar.FaceColor = [.2 .2 .2];
         hold on;
         projected_pred = norm_predicted(:,I_mat);
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
-        norm_predicted(:,I_mat) = 0;
+        title(sprintf(' %d A, %d V',A_tar, V_tar));
+        xlim([-35 15])
+        
+        norm_predicted(:,I_mat) = 0; %remove points from diagonal
+        
         subplot(1,3,2)
         sac_bar = bar(xlocs,A_sacs(:));
         sac_bar(1).FaceColor = [1 .5 .5];
         hold on;
-        projected_pred = squeeze(sum(norm_predicted,2));
+        projected_pred = squeeze(sum(norm_predicted,2)/2);%divide by 2 to normalize
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
-
+        title(sprintf('%d A',A_tar));
+        xlim([-35 15])
+        
+        
         subplot(1,3,3)
         sac_bar = bar(xlocs,V_sacs(:));
         sac_bar(1).FaceColor = [.5 .5 1];
         hold on
-        projected_pred = squeeze(sum(norm_predicted,3));
+        projected_pred = squeeze(sum(norm_predicted,3)/2);
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
+        title(sprintf('%d V',V_tar));
+        xlim([-35 15])
+        
+        
+        saveas(gcf,sprintf('%s\\split_by_type\\%s_%d%d',figpath,subject,A_tar,V_tar),'png');
     end
 end
-% saveas(gcf,sprintf('%s\\locex_%s_left_%s',figpath,subject,string(get_model_names(model))),'png');
 
 
 
-%% plot 4 perform model comparison and make plots
+%% plot 5 perform model comparison and make plots
 
 %n params is 5 for all models except the probabilistic fusion model in the
 %unity judgement case
-subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06'};% 'H07' 'H08'};
+subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 n_models = 3;
 aic = zeros(length(subject_list),n_models);% number of models needed
 bic = aic;
@@ -393,7 +416,7 @@ saveas(gcf,sprintf('%s\\bic_dif',figpath),'png');
 
 %% table 1 - table of model fit parameters
 
-subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' };%'H07' 'H08'};
+subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 model =[1 3 1];
 n_params= 5;
 params = zeros(length(subject_list),n_params);
@@ -412,7 +435,7 @@ for i= 1:length(subject_list)
         params_sd(i,:) = std_thetas{:}; %not actually sure this is what I want. Might want the standard deviation of the mean values rather than the std of the estimates across folds.
     else
         params(i,:) = thetas{:};
-        params_sd(i,:) = std(thetas{:});        
+        params_sd(i,:) = std(thetas{:});
     end
 end
 

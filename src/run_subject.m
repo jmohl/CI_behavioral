@@ -50,7 +50,6 @@ for mi = 1:size(model_list,1)
         test_nll = cell(fitoptions.kfolds,1);
         model = model_list{mi};
         for ki = 1:fitoptions.kfolds
-            tic
             train_data = AV_train{ki};
             test_data = AV_test{ki};
             fprintf('Fitting Subject: %s, Model: %d %d %d, k-fold:%d\n',subject,model, ki)
@@ -58,7 +57,6 @@ for mi = 1:size(model_list,1)
             [fit_theta{ki},~,fit_dist{ki}]=fitmodel(conditions,responses,model,fitoptions);
             [conditions,responses] = get_prepro_data(test_data,model,fitoptions);
             test_nll{ki} = datalike(conditions,responses,fit_theta{ki},model,fitoptions.eval_midpoints);
-            toc
         end
             m.models{mi} = model;
             m.thetas{mi} = fit_theta;
