@@ -35,7 +35,7 @@ fit_dist = m.fit_dist{model_ind};
 if length(fit_dist) > 1
     fit_dist = fit_dist{2};
 end
-ex_conds = [1,2,4,5];
+ex_conds = [1:20];
 for ic = ex_conds
     figure;
     imagesc(locations,locations,squeeze(fit_dist(ic,:,:)))
@@ -53,7 +53,7 @@ resp_dist = m.responses{model_ind};
 if length(resp_dist) > 1
     resp_dist = resp_dist{2};
 end
-ex_conds = [1,2,4,5];
+ex_conds = [1:20];
 for ic = ex_conds
     figure;
     imagesc(locations,locations,squeeze(resp_dist(ic,:,:)))
@@ -143,9 +143,9 @@ end
 
 
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subjects = {'Juno','Yoko','H05','H03','H08'};
+subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
-model = [1 3 2];
+model = [1 3 1];
 for si = 1:length(subjects)
     subject = subjects{si};
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
@@ -416,7 +416,7 @@ saveas(gcf,sprintf('%s\\bic_dif',figpath),'png');
 
 %% table 1 - table of model fit parameters
 
-subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+subject_list = {'Juno' 'Yoko'};% 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 model =[1 3 1];
 n_params= 5;
 params = zeros(length(subject_list),n_params);

@@ -22,7 +22,9 @@
 %% process data for fitting procedure
 
 
-function [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model,fitoptions)
+function [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model)
+
+global fitoptions
 % set relevant variables from options
 UBND = fitoptions.UBND;
 LBND = fitoptions.LBND;
@@ -82,7 +84,7 @@ end
 [fit_nll,best_ind] = min(fit_nlls(:));
 fit_theta = fit_thetas(best_ind,:);
 
-[~,fit_dist] = datalike(conditions,responses,fit_theta,model,eval_midpoints);
+[~,fit_dist] = datalike(conditions,responses,fit_theta,model);
 
 if debug 
     %plot some things for comparing with behavior

@@ -25,8 +25,8 @@
 
 
 %% start of likelihood code - currently only working for unity judgement
-function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
-
+function [nll,prmat] = datalike(conditions,responses,theta,model)
+global fitoptions
 % Causal inference type
 CI_type = model(1);
 %localization strategy
@@ -58,9 +58,9 @@ if min(theta(1:3)) <= 0.1 || max(theta(4:5)) > 1 || min(theta(4:5)) < 0
     nll = 1e10;
     return;
 end
-xrange = eval_midpoints; %range for integration.
-xrange_V(1,:,1) = xrange;
-xrange_A(1,1,:) = xrange';
+xrange = fitoptions.eval_midpoints; %range for integration.
+xrange_V(1,:,1) = fitoptions.eval_V;
+xrange_A(1,1,:) = fitoptions.eval_A;
 
 %% find the posterior distribution for C = 1 case for all values of xa and xv;
 

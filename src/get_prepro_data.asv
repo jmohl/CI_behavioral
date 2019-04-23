@@ -24,7 +24,8 @@ global fitoptions MAXRNG
 data = data(strcmp(data.trial_type,'AV'),:);
 conditions = table2array(unique(data(:,{'A_tar','V_tar'}),'rows'));
 midpoints = fitoptions.eval_midpoints;
-
+Aedges = fitoptions.eval_range;
+Vedges = fitoptions.eval_range;%range in degrees for evaluation
 unity_judge = model(2) == 1;
 location_estimate = model(2) == 2;
 if model(2) == 3 %do joint fit
@@ -52,11 +53,8 @@ if unity_judge %unity judgement model
 end
 if location_estimate %localization
     if fitoptions.dynamic_bins
-        responses_L = zeros(length(conditions),28,28); %[condition x Vlocs x Alocs]
-    else
-        responses_L = zeros(length(conditions),length(midpoints),length(midpoints));
-        Aedges = fitoptions.eval_range;
-        Vedges = fitoptions.eval_range;%range in degrees for evaluation
+        responses_L = zeros(length(conditions),29,29); %[condition x Vlocs x Alocs]
+       Aedges = [-MAXRNG:6:A_Tar - 12, A_Tar - 9:3:A_Tar - 6, A_Tar-5:1:A_Tar + 5, A_Tar + 6:3:A_Tar + 9, A_Tar + 12:6:MAXRNG]; %probably a nicer way to write this.
     end
     for ic = 1:length(conditions)
         V_tar = conditions(ic,2);
@@ -73,18 +71,13 @@ if location_estimate %localization
         %format into vectors
         A_sacs = cell2mat(A_sacs);
         V_sacs = cell2mat(V_sacs);
-        if fitoptions.dynamic_bins
-            Vedges = [-MAXRNG:6:V_tar - 12, V_tar - 9:3:V_tar - 6, V_tar-5:1:V_tar + 5, V_tar + 6:3:V_tar + 9, V_tar + 12:6:MAXRNG]; %probably a nicer way to write this.
-            Aedges = [-MAXRNG:6:A_tar - 12, A_tar - 9:3:A_tar - 6, A_tar-5:1:A_tar + 5, A_tar + 6:3:A_tar + 9, A_tar + 12:6:MAXRNG]; %probably a nicer way to write this.
-        end
+     if fitoptions.dynamic_bins
+        Vedges = [-MAXRNG:6:V_tar - 12, V_tar - 9:3:V_tar - 6, V_tar-5:1:V_tar + 5, V_tar + 6:3:V_tar + 9, V_tar + 12:6:MAXRNG]; %probably a nicer way to write this.
+        Aedges = [-MAXRNG:6:A_Tar - 12, A_Tar - 9:3:A_Tar - 6, A_Tar-5:1:A_Tar + 5, A_Tar + 6:3:A_Tar + 9, A_Tar + 12:6:MAXRNG]; %probably a nicer way to write this.
+    end
         %fitoptions.eval_A = Aedges;
         %fitoptions.eval_V = Vedges;
         responses_L(ic,:,:) = histcounts2(V_sacs(:,1),A_sacs(:,1),Vedges,Aedges);
-        figure %for testing purposes
-        hist3([V_sacs(:,1),A_sacs(:,1)],'Edges',{Vedges,Aedges});
-        xlabel('V saccades')
-        ylabel('A saccades')
-        title(sprintf('%d A %d V',A_tar,V_tar))
     end
 end
 

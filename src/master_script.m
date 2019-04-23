@@ -18,8 +18,7 @@ addpath('data','src','src\lautils', 'src\plotting');
 
 subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
-global MAXRNG
-MAXRNG = 50;
+
 binsize = 1; %size of bins used for responses, in degrees.
 
 % set models to be run
@@ -47,7 +46,9 @@ binsize = 1; %size of bins used for responses, in degrees.
 model_list = {[1 1 0]; [2 1 0]; [1 2 1]; [2 2 1]; [1 3 1]; [1 3 2]; [1 3 3]};
 %model_list = {[1 3 1]};
 %setting fitting procedure options
-fitoptions.load_saved_fits = 0; %load saved fits, if they exist
+global fitoptions MAXRNG
+MAXRNG = 50;
+fitoptions.load_saved_fits = 1; %load saved fits, if they exist
 fitoptions.make_plots = 0;
 fitoptions.n_iterations = 5; %set option to repeat fminsearch for n times
 fitoptions.UBND = [6 15 40 .9 .25]; %upper bounds on theta for grid search
@@ -67,13 +68,13 @@ if ~exist('results\modelfits', 'dir')
 end
 
 % load example day, for testing
-% subject_list = {'Juno'};
+ subject_list = {'Juno', 'Yoko'};
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};
     % load data
     if strcmp(subject,'Juno') | strcmp(subject,'Yoko')
-        this_file = dir(sprintf('data\\*%s_combined*',subject));
+        this_file = dir(sprintf('data\\*%s_combined_30*',subject));
         raw_data=load(this_file.name);
         raw_data = raw_data.tidy_data;
     else

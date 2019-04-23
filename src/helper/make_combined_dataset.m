@@ -15,7 +15,7 @@
 
 %pool for juno
 subject = 'Juno';
-n_pooled_days = 10;
+n_pooled_days = 30;
 seed = 'default';
 
 tidy_data = load_pool_data(n_pooled_days,subject,seed);
@@ -23,11 +23,11 @@ tidy_data = load_pool_data(n_pooled_days,subject,seed);
 %   'Juno_AVD2_2017_08_30';'Juno_AVD2_2017_12_07';'Juno_AVD2_2018_01_05';
 %   'Juno_AVD2_2018_02_21_2';'Juno_AVD2_2018_03_19_2';'Juno_AVD2_2018_04_09';
 %   'Juno_AVD2_2018_04_10'}
-% 6749 valid trials, 11443 total trials
-save('data\Juno_combined','tidy_data');
+% 6749 valid trials, 11443 total trials, for 10 pooled days.
+save('data\Juno_combined_30','tidy_data');
 
 subject = 'Yoko';
-n_pooled_days = 10;
+n_pooled_days = 30;
 seed = 'default';
 
 tidy_data = load_pool_data(n_pooled_days,subject,seed);
@@ -35,5 +35,5 @@ tidy_data = load_pool_data(n_pooled_days,subject,seed);
 % 'Yoko_AVD2_2018_11_29';'Yoko_AVD2_2018_12_13';'Yoko_AVD2_2019_01_09';
 % 'Yoko_AVD2_2019_01_10';'Yoko_AVD2_2019_01_11';'Yoko_AVD2_2019_01_18';
 % 'Yoko_AVD2_2019_01_31'}
-% 5582 valid trials, 7749 total trials
-save('data\Yoko_combined','tidy_data');
+% 5582 valid trials, 7749 total trials, for 10 pooled daya
+save('data\Yoko_combined_30','tidy_data');
