@@ -80,11 +80,11 @@ if location_estimate %localization
         %fitoptions.eval_A = Aedges;
         %fitoptions.eval_V = Vedges;
         responses_L(ic,:,:) = histcounts2(V_sacs(:,1),A_sacs(:,1),Vedges,Aedges);
-        figure %for testing purposes
-        hist3([V_sacs(:,1),A_sacs(:,1)],'Edges',{Vedges,Aedges});
-        xlabel('V saccades')
-        ylabel('A saccades')
-        title(sprintf('%d A %d V',A_tar,V_tar))
+%         figure %for testing purposes
+%         hist3([V_sacs(:,1),A_sacs(:,1)],'Edges',{Vedges,Aedges});
+%         xlabel('V saccades')
+%         ylabel('A saccades')
+%         title(sprintf('%d A %d V',A_tar,V_tar))
     end
 end
 

@@ -14,11 +14,44 @@
 %% set initial state
 local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
 cd(local_directory)
-addpath('src', 'src\plotting','results');
+addpath('src', 'src\plotting','results','data');
 figpath = 'results\figures';
 try
     mkdir(figpath)
 end
+
+%% Model and subject to plot
+subject = 'Juno';
+model = [1 3 1];
+m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
+m=m.m;
+model_ind = ismember(vertcat(m.models{:}),model,'rows');
+conditions = m.conditions{model_ind};
+
+%% plot jp1: unity judgement plots grouped by target sep, and across targets
+if model(2) == 3 %joint fit models have cell array rather than vectors for these
+    responses = m.responses{model_ind}{1};
+    fit_dist = m.fit_dist{model_ind}{1};
+else
+    responses = m.responses{model_ind};
+    fit_dist = m.fit_dist{model_ind};
+end
+
+figure
+plot_unity(conditions,responses,fit_dist);
+
+%% plot jp2: location as distance between A and V saccades for each condition grouped by target sep in the same way.
+if model(2) == 3 %joint fit models have cell array rather than vectors for these
+    responses = m.responses{model_ind}{2};
+    fit_dist = m.fit_dist{model_ind}{2};
+else
+    responses = m.responses{model_ind};
+    fit_dist = m.fit_dist{model_ind};
+end
+
+figure
+plot_sac_by_sep(conditions,responses,fit_dist);
+
 
 %% plot 1: example 2d joint distribution plots
 %load fit data

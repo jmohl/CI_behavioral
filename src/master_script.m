@@ -60,6 +60,7 @@ fitoptions.eval_midpoints = linspace(-MAXRNG+binsize/2,MAXRNG-binsize/2,length(f
 fitoptions.cross_validate = 0;
 fitoptions.kfolds = 5;
 
+fitoptions.dynamic_bins = 0;
 %todo:fix this
 run_days_separately = 0;
 
