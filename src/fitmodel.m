@@ -28,9 +28,6 @@ global fitoptions
 % set relevant variables from options
 UBND = fitoptions.UBND;
 LBND = fitoptions.LBND;
-grid_fineness = fitoptions.grid_fineness;
-eval_midpoints = fitoptions.eval_midpoints;
-fmin_options = fitoptions.fmin_options;
 debug = 0;
 
 %% start of actual fitting procedure
@@ -51,15 +48,15 @@ debug = 0;
 %
 % f=@() datalike_minsearch(theta);
 % timeit(f)
-datalike_minsearch = @(theta)datalike(conditions,responses,theta,model,eval_midpoints);
+datalike_minsearch = @(theta)datalike(conditions,responses,theta,model,fitoptions.eval_midpoints);
 
 n_iter = fitoptions.n_iterations;
 %step 1: evaluate likelihood at all values on grid, pick 5 best points
 fprintf('Step 1:grid search\n')
 tic
-theta_range = zeros(length(UBND),grid_fineness);
+theta_range = zeros(length(UBND),fitoptions.grid_fineness);
 for ii = 1:length(UBND)
-    theta_range(ii,:) = linspace(UBND(ii),LBND(ii),grid_fineness);
+    theta_range(ii,:) = linspace(UBND(ii),LBND(ii),fitoptions.grid_fineness);
 end
 [t1,t2,t3,t4,t5] = ndgrid(theta_range(1,:),theta_range(2,:),theta_range(3,:),theta_range(4,:),theta_range(5,:));
 grid_like = zeros(size(t1));
@@ -76,7 +73,7 @@ fit_nlls = zeros(size(best_thetas,1),1);
 for ii = 1:size(best_thetas,1)
     fprintf('Step 2:fmin search, iter:%d\n',ii)
     tic
-    [fit_thetas(ii,:),fit_nlls(ii),~,~] = fminsearch(datalike_minsearch,best_thetas(ii,:),fmin_options);
+    [fit_thetas(ii,:),fit_nlls(ii),~,~] = fminsearch(datalike_minsearch,best_thetas(ii,:),fitoptions.fmin_options);
     toc
 end
 %this was able to run the optimization procedure in 6.4 sec for the unity
@@ -84,7 +81,7 @@ end
 [fit_nll,best_ind] = min(fit_nlls(:));
 fit_theta = fit_thetas(best_ind,:);
 
-[~,fit_dist] = datalike(conditions,responses,fit_theta,model);
+[~,fit_dist] = datalike(conditions,responses,fit_theta,model,fitoptions.eval_midpoints);
 
 if debug 
     %plot some things for comparing with behavior

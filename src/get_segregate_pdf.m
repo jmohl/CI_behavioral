@@ -21,7 +21,7 @@
 % likelihood
 %
 % Outputs: 
-% seg_pdf, the sum of A_pdf and V_pdf. A
+% seg_pdf, the sum of A_pdf and V_pdf.
 % A_pdf, normal pdf of auditory target sa given xa and prior
 % V_pdf, same but for visual percept xv.
 function [seg_pdf, A_pdf,V_pdf, As_mu, Vs_mu,As_sig,Vs_sig] = get_segregate_pdf(xa,xv,prior_mu,A_sig,V_sig,prior_sig,eval_range)
@@ -42,7 +42,7 @@ else
         expanded_range(1,1,1,:) = eval_range; %putting eval range in 4th dim to allow for integration later on.
         A_pdf = bsxfun_normpdf(expanded_range,As_mu,As_sig); %evaluate likelihood at each actual saccade location
         V_pdf = bsxfun_normpdf(expanded_range,Vs_mu,Vs_sig);
-        seg_pdf = bsxfun(@plus,A_pdf,V_pdf)/2; %normalizing so that total probability sums to 1
+        seg_pdf = bsxfun(@plus,A_pdf,V_pdf)/2; %normalizing so that total probability sums to 1 % this is the old way of doing this, which I no longer use
 
 end
 

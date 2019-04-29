@@ -22,14 +22,14 @@ end
 
 %% Model and subject to plot
 subject = 'Juno';
-model = [1 3 1];
+model = [1 1 3];
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
 conditions = m.conditions{model_ind};
 
 %% plot jp1: unity judgement plots grouped by target sep, and across targets
-if model(2) == 3 %joint fit models have cell array rather than vectors for these
+if model(3) == 3 %joint fit models have cell array rather than vectors for these
     responses = m.responses{model_ind}{1};
     fit_dist = m.fit_dist{model_ind}{1};
 else
@@ -41,7 +41,7 @@ figure
 plot_unity(conditions,responses,fit_dist);
 
 %% plot jp2: location as distance between A and V saccades for each condition grouped by target sep in the same way.
-if model(2) == 3 %joint fit models have cell array rather than vectors for these
+if model(3) == 3 %joint fit models have cell array rather than vectors for these
     responses = m.responses{model_ind}{2};
     fit_dist = m.fit_dist{model_ind}{2};
 else
@@ -60,7 +60,7 @@ subject = 'Yoko';
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 % set desired model and range
-model = [1 3 1];%keep an eye on this in the future, might change
+model = [1 1 3];%keep an eye on this in the future, might change
 locations = m.fitoptions.eval_range;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
 
@@ -109,7 +109,7 @@ Y_files = struct2cell(dir('results\modelfits\Yoko*'));
 subjects_Y = Y_files(1,:);
 subjects = {subjects_H,subjects_J,subjects_Y};
 data_labels = {'Human','J','Y'};
-model = [1 1 0];%joint fit model
+model = [1 0 1];%joint fit model
 
 for data_ind = 1:3
     this_subjects = subjects{data_ind};
@@ -120,7 +120,7 @@ for data_ind = 1:3
         m = load(sprintf('results\\modelfits\\%s',subject{:}));
         m=m.m;
         model_ind = ismember(vertcat(m.models{:}),model,'rows');
-        if model(2) == 3
+        if model(3) == 3
             responses = m.responses{model_ind}{1};
             fit_dist = m.fit_dist{model_ind}{1};
         else
@@ -178,7 +178,7 @@ end
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
 subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
-model = [1 3 1];
+model = [1 1 3];
 for si = 1:length(subjects)
     subject = subjects{si};
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
@@ -191,7 +191,7 @@ for si = 1:length(subjects)
     
     xlocs = m.fitoptions.eval_midpoints;
     model_ind = ismember(vertcat(m.models{:}),model,'rows');
-    if model(2) == 3
+    if model(3) == 3
         saccades_all = m.responses{model_ind}{2};
         predicted_all = m.fit_dist{model_ind}{2};
     else
@@ -243,7 +243,7 @@ A_tars = [-24 -12];
 V_tars = [-24 -18 -12 -6 12];
 %A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
-model = [1 3 1];
+model = [1 1 3];
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 
@@ -307,13 +307,13 @@ A_tars = [-24 -6];
 V_tars = [-24 -18 -12 -6 12];
 %A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
-model = [1 3 1];
+model = [1 1 3];
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 
 xlocs = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
-if model(2) == 3
+if model(3) == 3
     saccades_all = m.responses{model_ind}{2};
     predicted_all = m.fit_dist{model_ind}{2};
 else
@@ -389,7 +389,7 @@ subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 n_models = 3;
 aic = zeros(length(subject_list),n_models);% number of models needed
 bic = aic;
-models =[1 3 1; 1 3 2; 1 3 3];
+models =[1 1 3; 1 2 3; 1 3 3];
 nparams = [5, 5, 5];
 for i= 1:length(subject_list)
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject_list{i}));
@@ -450,7 +450,7 @@ saveas(gcf,sprintf('%s\\bic_dif',figpath),'png');
 %% table 1 - table of model fit parameters
 
 subject_list = {'Juno' 'Yoko'};% 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
-model =[1 3 1];
+model =[1 1 3];
 n_params= 5;
 params = zeros(length(subject_list),n_params);
 params_sd = params;

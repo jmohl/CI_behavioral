@@ -20,26 +20,42 @@
 % theta(4) p_common: prior on common cause
 % theta(5) lambda: lapse rate, probability of random response occuring
 % model(1) Causal inference type (1=bayesian,2=probabilistic fusion, 3 fixed criterion (todo))
-% model(2) Response type (1 = unity judgement, 2 = location, 3 = joint)
-% model(3) combination rule(1=posterior reweighting, 2 = model selection, 3 = probabilistic fusion (todo, make fusion rate free param?) 4= probability matching (todo))
+% model(2) combination rule for localization(1=posterior reweighting, 2 = model selection, 3 = probabilistic fusion (todo, make fusion rate free param?) 4= probability matching (todo))
+% model(3) Response type (1 = unity judgement, 2 = location, 3 = joint)
+%
 
 
 %% start of likelihood code - currently only working for unity judgement
-function [nll,prmat] = datalike(conditions,responses,theta,model)
-global fitoptions
+function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 % Causal inference type
 CI_type = model(1);
 %localization strategy
-combination_rule = model(3); %rule for combining sensory inputs, based on causal judgement 
+combination_rule = model(2); %rule for combining sensory inputs, based on causal judgement 
 %task type
-unity_judge = model(2) == 1;
-location_estimate = model(2) == 2;
-if model(2) == 3 %do joint fit
-    unity_judge = 1;
-    location_estimate = 1;
+
+switch model(3)
+    case 1
+        unity_judge = 1;
+        location_estimate = 0;
+        unisensory_loc = 0;
+        
+    case 2
+        unity_judge = 0;
+        location_estimate = 1;
+        unisensory_loc = 0;
+        
+    case 3
+        unity_judge = 1;
+        location_estimate = 1;
+        unisensory_loc = 0;
+        
+    case 4
+        unity_judge = 0;
+        location_estimate = 0;
+        unisensory_loc = 1;
 end
 
-
+%give fit parameters sensible names
 V_sig = theta(1);%vis target sigma
 A_sig = theta(2);%close aud target sigma
 prior_sig = theta(3);%sigma of centrality prior
@@ -47,8 +63,13 @@ p_common = theta(4);%prior on common cause
 lambda = theta(5); %lapse probability
 prior_mu = 0; %fixed for now
 
-conds_A = conditions(:,1);
-conds_V = conditions(:,2);
+if unisensory_loc
+    conds_A = conditions{1};
+    conds_V = conditions{2};
+else
+    conds_A = conditions(:,1);
+    conds_V = conditions(:,2);
+end
 
 %HACK fminsearch does not allow bounds, so I'm including this really hacky
 %way to require that the likelihood is not calculated for impossible
@@ -58,32 +79,38 @@ if min(theta(1:3)) <= 0.1 || max(theta(4:5)) > 1 || min(theta(4:5)) < 0
     nll = 1e10;
     return;
 end
-xrange = fitoptions.eval_midpoints; %range for integration.
-xrange_V(1,:,1) = fitoptions.eval_V;
-xrange_A(1,1,:) = fitoptions.eval_A;
+xrange = eval_midpoints; %range for integration.
+if unisensory_loc
+    xrange_V(1,:) = xrange;
+    xrange_A(1,:) = xrange;
+else
+    %for multisensory trials response distributions are 2 dimensional
+    %(joint A and V saccades)
+    xrange_V(1,:,1) = xrange;
+    xrange_A(1,1,:) = xrange;
+end
 
 %% find the posterior distribution for C = 1 case for all values of xa and xv;
 
 switch CI_type 
     case 1 % bayesian causal inference posterior
         c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common);
+        if unity_judge
+               %judgement rule, if post > 0.5, choose unity
+            w1_unity = zeros(size(c1post));
+            w1_unity(c1post > 0.5) = 1;
+            w1_unity(c1post == 0.5) = 0.5;
+        end
     case 2
         c1post = repmat(p_common,1,length(xrange),length(xrange));
-end
-
-if unity_judge
-    %judgement rule, if post > 0.5, choose unity
-    if CI_type == 2 %if probabilistic fusion rule
-        w1_unity = c1post;
-    else %use fixed decision rule for now
-    w1_unity = zeros(size(c1post));
-    w1_unity(c1post > 0.5) = 1;
-    w1_unity(c1post == 0.5) = 0.5;
-    end
+        if unity_judge
+            %if probabilistic fusion rule, judgement is fixed
+            w1_unity = c1post;
+        end
 end
 
 %% get likelihood functions for A location and V location
-if location_estimate
+if location_estimate || unisensory_loc
     int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %int pdf = 1x(xA)x(xV)x(eval_range) array. so for a given value of xA and xv, pdf is in 4th dim
     
     [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
@@ -106,7 +133,7 @@ if location_estimate
             V_c2_pdf = bsxfun(@times,(1-fixed_weights), V_seg_pdf);
             A_c2_pdf = bsxfun(@times,(1-fixed_weights), A_seg_pdf);
         case 4 % probability matching
-            
+            %todo
             
     end
 end
@@ -114,12 +141,13 @@ end
 %% Marginalize over internal variables using numerical integration
 %integrate over xa xv values for every condition in condition vector
 % try both using qtrapz adapted from acerbi
-
-xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
-xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volume element
-xpdf_A = bsxfun_normpdf(xrange_A, conds_A, A_sig);
-xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 3));  % Not multiplying by volume element(JM?)
-
+if ~unisensory_loc
+    xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
+    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volume element
+    xpdf_A = bsxfun_normpdf(xrange_A, conds_A, A_sig);
+    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 3));  % Not multiplying by volume element(JM?)
+end
+%estimate percent of single saccade trials, integrate per condition
 if unity_judge
     prmat_unity = zeros(numel(conds_V), 2);
     %prmat_unity(:,1) = VestBMS_finalqtrapz(xpdf_V,xpdf_A,w1_unity);    % Not multiplying by volume element (xpdfs did not)
@@ -130,6 +158,8 @@ if unity_judge
     %add in chance for random response, lambda
     prmat_unity = lambda/2 + (1-lambda)*prmat_unity;
 end
+
+%estimate saccade endpoint locations, integrate per condition
 if location_estimate %this is the location estimate when cause is unknown. Not sure if right.
     prmat_est_AV_c1 = zeros(numel(conds_V), length(xrange));
     prmat_est_AV_c1(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), AV_c1_pdf), 2), 3); %Estimate for single saccade conditions, same for sA and sV, so labeling AV
@@ -160,8 +190,39 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_sac = prmat_sac_c2 + prmat_est_AV_diag;
 end
 
+if unisensory_loc %unisensory localization fits
+    A_seg_pdf_rescale(1,:,:) = squeeze(A_seg_pdf);
+    V_seg_pdf_rescale(1,:,:) = squeeze(V_seg_pdf);
+    xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
+    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2));
+    xpdf_A = bsxfun_normpdf(xrange_A, conds_A,A_sig);
+    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 2));
+    
+    prmat_est_V_uni = zeros(numel(conds_V), length(xrange));
+    prmat_est_V_uni(:,:) = qtrapz(bsxfun(@times, xpdf_V, V_seg_pdf_rescale), 2);
+    prmat_est_A_uni = zeros(numel(conds_A), length(xrange));
+    prmat_est_A_uni(:,:) = qtrapz(bsxfun(@times, xpdf_A, A_seg_pdf_rescale), 2);
+    
+    %fix probabilities
+    prmat_est_V_uni= min(max(prmat_est_V_uni,0),1);
+    prmat_est_A_uni= min(max(prmat_est_A_uni,0),1);
+    
+    %add lapse rate
+    prmat_est_V_uni = lambda/length(xrange) + (1-lambda)*prmat_est_V_uni; %chance to make a lapse sacade is uniform across space. which is not technically true but an approximation
+    prmat_est_A_uni = lambda/length(xrange) + (1-lambda)*prmat_est_A_uni;
+    
+end
+    
+
 %% calculate negative log likelihood of data
-if unity_judge && location_estimate %when fitting jointly
+if unisensory_loc
+    nll_A = -1 * sum(responses{1}.*log(prmat_est_A_uni),'all');
+    nll_V = -1 * sum(responses{2}.*log(prmat_est_V_uni),'all');
+    nll = nll_A + nll_V;
+    prmat{1} = prmat_est_A_uni;
+    prmat{2} = prmat_est_V_uni;
+
+elseif unity_judge && location_estimate %when fitting jointly
     nll_u = -1*sum(responses{1}.*log(prmat_unity));
     nll_u = sum(nll_u); %sum across bins
     nll_l = -1*sum(responses{2}.*log(prmat_sac));
@@ -170,6 +231,7 @@ if unity_judge && location_estimate %when fitting jointly
     nll = nll_u + nll_l; %total nll is sum of independent nll
     prmat{1} = prmat_unity;
     prmat{2} = prmat_sac;
+    
 elseif unity_judge
     nll = -1*sum(responses.*log(prmat_unity));
     nll = sum(nll(:)); %sum across bins

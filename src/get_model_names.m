@@ -16,7 +16,7 @@ for i = 1:size(models,1)
         case 2
             model_str = 'PF'; %probabilistic fusion
     end
-    switch models(i,3) %location judgement type
+    switch models(i,2) %location judgement type
         case 1
             model_str = strcat(model_str,'_B'); %bayesian reweighting
         case 2
@@ -24,7 +24,7 @@ for i = 1:size(models,1)
         case 3
             model_str = strcat(model_str,'_PF'); %probabilistic fusion
     end
-    switch models(i,2)  %fit type
+    switch models(i,3)  %fit type
         case 1
             model_str = strcat(model_str,'_U'); %unity judgement
         case 2

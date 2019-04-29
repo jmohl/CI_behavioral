@@ -14,14 +14,15 @@
 %note: H01 has some problems and it is best to exclude for now, since I
 %will probably have to rerun that subject in any case
 
-function run_subject(subject,raw_data,model_list,fitoptions)
+function run_subject(subject,raw_data,model_list)
+global fitoptions
+
 %% Clean data
 %get valid data only
 valid_data = raw_data(logical(raw_data.valid_tr),:);
 
 %omit trials without valid endpoints, very rarely removes data
 data = valid_data(~cellfun('isempty',valid_data.valid_endpoints),:);
-
 
 
 %% split data into train and test sets
@@ -37,10 +38,16 @@ if exist(sprintf('results\\modelfits\\%s_m.mat',subject),'file') &&  fitoptions.
 else %initialize model struct
     m.fitoptions = fitoptions;
     m.subject = subject;
+    m.models={};
+    m.nll={};
+    m.thetas = {};
+    m.fit_dist={};
+    m.conditions={};
+    m.responses={};
 end
 
 for mi = 1:size(model_list,1)
-    if isfield(m,'models')&& ismember(model_list{mi},vertcat(m.models{:}),'rows')
+    if ~isempty(m.models)&& ismember(model_list{mi},vertcat(m.models{:}),'rows')
         fprintf('skipping model [%d %d %d] because already saved \n',model_list{mi})
         continue
     end
@@ -53,32 +60,33 @@ for mi = 1:size(model_list,1)
             train_data = AV_train{ki};
             test_data = AV_test{ki};
             fprintf('Fitting Subject: %s, Model: %d %d %d, k-fold:%d\n',subject,model, ki)
-            [conditions,responses] = get_prepro_data(train_data,model,fitoptions);
-            [fit_theta{ki},~,fit_dist{ki}]=fitmodel(conditions,responses,model,fitoptions);
-            [conditions,responses] = get_prepro_data(test_data,model,fitoptions);
+            [conditions,responses] = get_prepro_data(train_data,model);
+            [fit_theta{ki},~,fit_dist{ki}]=fitmodel(conditions,responses,model);
+            [conditions,responses] = get_prepro_data(test_data,model);
             test_nll{ki} = datalike(conditions,responses,fit_theta{ki},model,fitoptions.eval_midpoints);
         end
-            m.models{mi} = model;
-            m.thetas{mi} = fit_theta;
-            m.nll{mi} = test_nll;
-            m.fit_dist{mi} = fit_dist;
-            [m.conditions{mi},m.responses{mi}] = get_prepro_data(data,model,fitoptions); %for conditions and responses (used for plotting), return whole dataset
+            m.models{end+1} = model;
+            m.thetas{end+1} = fit_theta;
+            m.nll{end+1} = test_nll;
+            m.fit_dist{end+1} = fit_dist;
+            [m.conditions{end+1},m.responses{end+1}] = get_prepro_data(data,model); %for conditions and responses (used for plotting), return whole dataset
     else
         model = model_list{mi}; 
         fprintf('Fitting Subject: %s, Model: %d %d %d\n',subject,model)
-        m.models{mi} = model;
-        [conditions,responses] = get_prepro_data(data,model,fitoptions);
-        [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model,fitoptions);
-        m.thetas{mi} = fit_theta;
-        m.nll{mi} = fit_nll;
-        m.fit_dist{mi} = fit_dist;
-        m.conditions{mi} = conditions;
-        m.responses{mi} = responses;
+        m.models{end+1} = model;
+        [conditions,responses] = get_prepro_data(data,model);
+        [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model);
+        m.thetas{end+1} = fit_theta;
+        m.nll{end+1} = fit_nll;
+        m.fit_dist{end+1} = fit_dist;
+        m.conditions{end+1} = conditions;
+        m.responses{end+1} = responses;
     end
     
     %save out model struct
     save(sprintf('results\\modelfits\\%s_m',subject),'m');
 end
+clear m rawdata; %not convinced this does anything but am getting a lot of crashing
 
 %% making plots for single subject
 %some evaluation plots, note that this replots ALL models in the current

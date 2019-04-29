@@ -7,30 +7,54 @@
 %
 % Description: preprocess the data to work with fitmodel format.
 %
-% Output format:
-% Model [x 1 x]: unity judgement, n saccades (max =2)
-% Model [1,2,x]: localization, bayes V1 CxV array with hist counts in each
-% bin. Saccades lumped together into one distribution
-% Model [2,1,x]: localization, bayes V2 CxVxA array where the counts are
-% taken in a grid defined by [Vcoord,Acoord] of a two saccade pair. If one
-% saccade Vcoord = Acoord
+% Output format is different depending on model, for each condition (C): 
+% Model [x x 1]: unity judgement task, Cx2 array of number of one saccade
+% and two saccade trials per condition 
+% Model [1,x,2]: localization only, Cx100x100 array of saccade endpoints 
+% where the counts are taken in a grid defined by [Vcoord,Acoord] of a two
+% saccade pair. If one saccade Vcoord = Acoord Model
+% Model [1,x,3]: Joint fit, cell array containing both of the above
+% response matrices.
 
 % TODO: update for dynamic binning, return A edges and V edges, as well as
 % midpoints.
 function [conditions,responses] = get_prepro_data(data,model)
 global fitoptions MAXRNG
 % preprocess data to work with fitmodel
+
+switch model(3)
+    case 1
+        unity_judge = 1;
+        location_estimate = 0;
+        unisensory_loc = 0;
+        
+    case 2
+        unity_judge = 0;
+        location_estimate = 1;
+        unisensory_loc = 0;
+        
+    case 3
+        unity_judge = 1;
+        location_estimate = 1;
+        unisensory_loc = 0;
+        
+    case 4
+        unity_judge = 0;
+        location_estimate = 0;
+        unisensory_loc = 1;
+end
+
 % get condition vectors
+if ~unisensory_loc
 data = data(strcmp(data.trial_type,'AV'),:);
 conditions = table2array(unique(data(:,{'A_tar','V_tar'}),'rows'));
-midpoints = fitoptions.eval_midpoints;
-
-unity_judge = model(2) == 1;
-location_estimate = model(2) == 2;
-if model(2) == 3 %do joint fit
-    unity_judge = 1;
-    location_estimate = 1;
+else
+    A_data = data(strcmp(data.trial_type,'A'),:);
+    V_data = data(strcmp(data.trial_type,'V'),:);
+    A_conditions = table2array(unique(A_data(:,{'A_tar'}),'rows'));
+    V_conditions = table2array(unique(V_data(:,{'V_tar'}),'rows'));
 end
+midpoints = fitoptions.eval_midpoints;
 
 if unity_judge %unity judgement model
     %convert into limited table %todo maybe not this?
@@ -73,14 +97,15 @@ if location_estimate %localization
         %format into vectors
         A_sacs = cell2mat(A_sacs);
         V_sacs = cell2mat(V_sacs);
-        if fitoptions.dynamic_bins
+        if fitoptions.dynamic_bins %working on
             Vedges = [-MAXRNG:6:V_tar - 12, V_tar - 9:3:V_tar - 6, V_tar-5:1:V_tar + 5, V_tar + 6:3:V_tar + 9, V_tar + 12:6:MAXRNG]; %probably a nicer way to write this.
             Aedges = [-MAXRNG:6:A_tar - 12, A_tar - 9:3:A_tar - 6, A_tar-5:1:A_tar + 5, A_tar + 6:3:A_tar + 9, A_tar + 12:6:MAXRNG]; %probably a nicer way to write this.
         end
-        %fitoptions.eval_A = Aedges;
-        %fitoptions.eval_V = Vedges;
+%         fitoptions.eval_A = Aedges;
+%         fitoptions.eval_V = Vedges;
         responses_L(ic,:,:) = histcounts2(V_sacs(:,1),A_sacs(:,1),Vedges,Aedges);
-%         figure %for testing purposes
+%          %for dynamic bin testing purposes
+%         figure
 %         hist3([V_sacs(:,1),A_sacs(:,1)],'Edges',{Vedges,Aedges});
 %         xlabel('V saccades')
 %         ylabel('A saccades')
@@ -88,7 +113,39 @@ if location_estimate %localization
     end
 end
 
-if unity_judge && location_estimate
+% unisensory localization
+if unisensory_loc
+        responses_A = zeros(length(A_conditions),length(midpoints));
+        responses_V = zeros(length(V_conditions),length(midpoints));
+        Aedges = fitoptions.eval_range;
+        Vedges = fitoptions.eval_range;%range in degrees for evaluation
+        
+    for ia = 1:length(A_conditions)
+        A_tar = A_conditions(ia);
+        this_data = A_data(A_data{:,{'A_tar'}}==A_tar,:);
+        %get auditory  saccades for each trial
+        A_sacs = this_data.valid_endpoints;
+        %format into vectors
+        A_sacs = cell2mat(A_sacs);
+        responses_A(ia,:) = histcounts(A_sacs(:,1),Aedges);
+    end
+    for iv = 1:length(V_conditions)
+        V_tar = V_conditions(iv);
+        this_data = V_data(V_data{:,{'V_tar'}}==V_tar,:);
+        %get auditory  saccades for each trial
+        V_sacs = this_data.valid_endpoints;
+        %format into vectors
+        V_sacs = cell2mat(V_sacs);
+        responses_V(iv,:) = histcounts(V_sacs(:,1),Vedges);
+    end
+end
+
+if unisensory_loc
+    responses{1} = responses_A;
+    responses{2} = responses_V;
+    conditions{1} = A_conditions;
+    conditions{2} = V_conditions;
+elseif unity_judge && location_estimate
     responses{1} = responses_u;
     responses{2} = responses_L;
 elseif unity_judge
