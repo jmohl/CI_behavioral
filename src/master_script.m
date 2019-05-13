@@ -43,7 +43,7 @@ subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 % [1 2 3] = bayesian CI (1) model selection(2) joint fit(3)
 % [1 3 3] = bayesian CI (1) probabilistic fusion(3) joint fit(3)
 % [0 0 4] = no CI (0), no fusion (0), unimodal localization (4);
-model_list = {[1 0 1]; [2 0 1]; [1 1 2]; [2 1 2]; [1 1 3]; [1 2 3]; [1 3 3]};
+model_list = {[1 0 1]; [2 0 1]; [1 1 2]; [2 1 2]; [1 1 3]; [1 2 3]; [1 3 3];[0 0 4]};
 %setting fitting procedure options
 global fitoptions MAXRNG
 MAXRNG = 50;

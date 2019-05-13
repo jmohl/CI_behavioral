@@ -9,6 +9,7 @@
 % plot 1: example joint distribution for the two saccade case
 % plot 2: unity judgements pooled across subjects (or days)
 % plot 3: specific localization fits, rescaled and sized for nice viewing.
+%todo update this list
 
 
 %% set initial state
@@ -21,8 +22,9 @@ try
 end
 
 %% Model and subject to plot
-subject = 'Juno';
+subject = 'H06';
 model = [1 1 3];
+
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
@@ -39,7 +41,9 @@ end
 
 figure
 plot_unity(conditions,responses,fit_dist);
+title(sprintf('percent trials reported unity by target separation \n %s model %d%d%d',subject, model))
 
+    saveas(gcf,sprintf('%s\\%s_unity_combined',figpath,subject),'png');
 %% plot jp2: location as distance between A and V saccades for each condition grouped by target sep in the same way.
 if model(3) == 3 %joint fit models have cell array rather than vectors for these
     responses = m.responses{model_ind}{2};
@@ -51,8 +55,7 @@ end
 
 figure
 plot_sac_by_sep(conditions,responses,fit_dist);
-
-
+    saveas(gcf,sprintf('%s\\%s_delt_loc_combined',figpath,subject),'png');
 %% plot 1: example 2d joint distribution plots
 %load fit data
 
@@ -98,7 +101,6 @@ for ic = ex_conds
     title(sprintf('%d Aud, %d Vis pair', m.conditions{model_ind}(ic,:)))
     saveas(gcf,sprintf('%s\\%s%dA%dV_resp',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
 end
-
 %% plot 2: unity judgement plots, average across subjects/days
 
 %build unity judgement array of response/fit vectors
@@ -146,11 +148,11 @@ for data_ind = 1:3
     
     % split data by condition, 24 or 6 aud tar, for easier visualization
     A_tars = unique(abs(conditions(:,1)));
-    for A_tar = A_tars'
+    for A_ind = A_tars'
         figure
         hold on;
-        pos_inds = conditions(:,1) == A_tar;
-        neg_inds = conditions(:,1) == -A_tar;
+        pos_inds = conditions(:,1) == A_ind;
+        neg_inds = conditions(:,1) == -A_ind;
         v_tar = conditions(pos_inds,2); %using visual target location ,will almost certainly change in future but this provides maximum information
         for subj = 1:size(this_subjects,2)
             %plotting individual responses
@@ -164,17 +166,15 @@ for data_ind = 1:3
         v_tar = conditions(neg_inds,2);
         p = errorbar(v_tar,mean_resp(neg_inds),sem_resp(neg_inds),'LineWidth',2);
         plot(v_tar,mean_fit(neg_inds),'LineWidth',2,'Color',p.Color,'LineStyle','--');
-        title(sprintf('Single saccade ratio by tar sep (%s):\\pm %d Aud loc',data_labels{data_ind},A_tar),'Interpreter','tex')
+        title(sprintf('Single saccade ratio by tar sep (%s):\\pm %d Aud loc',data_labels{data_ind},A_ind),'Interpreter','tex')
         ylabel('percent single saccade')
         xlabel('Vis target location')
         set(gca,'box','off')
         %set(gcf,'Position',[100,60,1049,895])
-        saveas(gcf,sprintf('%s\\psing_%s_%dA_%s',figpath,data_labels{data_ind},A_tar,string(get_model_names(model))),'png');
+        saveas(gcf,sprintf('%s\\psing_%s_%dA_%s',figpath,data_labels{data_ind},A_ind,string(get_model_names(model))),'png');
     end
     
 end
-
-
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
 subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
@@ -262,9 +262,9 @@ figure;
 set(gcf,'Position',[100,60,1600,500])
 pind = 1;
 for V_tar = V_tars
-    for A_tar = A_tars
+    for A_ind = A_tars
         subplot(5,2,pind)
-        tar_pair = [A_tar,V_tar];
+        tar_pair = [A_ind,V_tar];
         this_ind = ismember(conditions,tar_pair,'rows');
         saccades = saccades_all(this_ind,:,:);
         predicted = predicted_all(this_ind,:,:);
@@ -287,7 +287,7 @@ for V_tar = V_tars
         
         %title(sprintf('%d A, %d V, %s', tar_pair,subject));
         %legend('Single Sac','A sac','V sac','Model','Location','Best');
-        xlabel(A_tar);
+        xlabel(A_ind);
         ylabel(V_tar)
         set(gca,'box','off')
         %set bounds that focus on the data instead of the whole range
@@ -299,8 +299,6 @@ for V_tar = V_tars
     end
 end
 saveas(gcf,sprintf('%s\\locex_%s_left_%s',figpath,subject,string(get_model_names(model))),'png');
-
-
 %% plot 4, splitting up to compare fits in each dimension
 subject = 'Yoko';
 A_tars = [-24 -6];
@@ -326,8 +324,8 @@ try
     mkdir(sprintf('%s\\split_by_type',figpath))
 end
 for V_tar = V_tars
-    for A_tar = A_tars
-        tar_pair = [A_tar,V_tar];
+    for A_ind = A_tars
+        tar_pair = [A_ind,V_tar];
         this_ind = ismember(conditions,tar_pair,'rows');
         saccades = saccades_all(this_ind,:,:);
         predicted = predicted_all(this_ind,:,:);
@@ -350,7 +348,7 @@ for V_tar = V_tars
         hold on;
         projected_pred = norm_predicted(:,I_mat);
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
-        title(sprintf(' %d A, %d V',A_tar, V_tar));
+        title(sprintf(' %d A, %d V',A_ind, V_tar));
         xlim([-35 15])
         
         norm_predicted(:,I_mat) = 0; %remove points from diagonal
@@ -361,7 +359,7 @@ for V_tar = V_tars
         hold on;
         projected_pred = squeeze(sum(norm_predicted,2)/2);%divide by 2 to normalize
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
-        title(sprintf('%d A',A_tar));
+        title(sprintf('%d A',A_ind));
         xlim([-35 15])
         
         
@@ -375,12 +373,9 @@ for V_tar = V_tars
         xlim([-35 15])
         
         
-        saveas(gcf,sprintf('%s\\split_by_type\\%s_%d%d',figpath,subject,A_tar,V_tar),'png');
+        saveas(gcf,sprintf('%s\\split_by_type\\%s_%d%d',figpath,subject,A_ind,V_tar),'png');
     end
 end
-
-
-
 %% plot 5 perform model comparison and make plots
 
 %n params is 5 for all models except the probabilistic fusion model in the
@@ -444,9 +439,6 @@ plot([0 0], [0,3],'LineWidth',2,'Color',[0 0 0 .5])
 ylim([0 3])
 title('Evidence for Bayes/Bayes model vs alternatives')
 saveas(gcf,sprintf('%s\\bic_dif',figpath),'png');
-
-
-
 %% table 1 - table of model fit parameters
 
 subject_list = {'Juno' 'Yoko'};% 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
@@ -482,6 +474,54 @@ param_sd_table.Properties.RowNames = subject_list;
 
 human_table = param_table(3:end,:);
 grpstats(human_table,[],{'mean','std'})
+%% unisensory localization
+model = [0 0 4];
 
+xlocs = m.fitoptions.eval_midpoints;
+model_ind = ismember(vertcat(m.models{:}),model,'rows');
+saccades_V = m.responses{model_ind}{2};
+predicted_V = m.fit_dist{model_ind}{2};
+saccades_A = m.responses{model_ind}{1};
+predicted_A = m.fit_dist{model_ind}{1};
+conditions_A = m.conditions{model_ind}{1};
+conditions_V = m.conditions{model_ind}{2};
 
+figure
+for A_ind = 1:length(conditions_A)
+    subplot(2,2,A_ind)
+    saccades = saccades_A(A_ind,:);
+    predicted = predicted_A(A_ind,:);
+    norm_saccades=saccades/sum(saccades(:));
+    
+    plot(xlocs,norm_saccades,'r','LineWidth',1.5)
+    hold on
+    plot(xlocs,predicted,'LineWidth',1.5,'Color',[.5 .5 .5]);
+    plot([conditions_A(A_ind), conditions_A(A_ind)],[0,.05],'k--','LineWidth',1.5);
+    xlabel('Location (deg)')
+    ylabel('Percent of saccades')
+    title(sprintf('%d Auditory',conditions_A(A_ind)))
+    set(gca,'box','off')
+end
+set(gcf,'Position',[0,0,1400,1400])
+saveas(gcf,sprintf('%s\\%s_unimodal_A',figpath,subject),'png');
+
+figure
+for V_ind = 1:length(conditions_V)
+    subplot(5,2,V_ind)
+    saccades = saccades_V(V_ind,:);
+    predicted = predicted_V(V_ind,:);
+    norm_saccades=saccades/sum(saccades(:));
+    
+    plot(xlocs,norm_saccades,'b','LineWidth',1.5)
+    hold on
+    plot(xlocs,predicted,'LineWidth',1.5,'Color',[.5 .5 .5]);
+    plot([conditions_V(V_ind), conditions_V(V_ind)],[0,.2],'k--','LineWidth',1.5);
+    xlabel('Location (deg)')
+    ylabel('Percent of saccades')
+    title(sprintf('%d Visual',conditions_V(V_ind)))
+    set(gca,'box','off')
+end
+set(gcf,'Position',[0,0,1400,1400])
+
+saveas(gcf,sprintf('%s\\%s_unimodal_V',figpath,subject),'png');
 
