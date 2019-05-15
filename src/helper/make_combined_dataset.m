@@ -15,25 +15,38 @@
 
 %pool for juno
 subject = 'Juno';
-n_pooled_days = 30;
+n_pooled_days = 10;
 seed = 'default';
 
 tidy_data = load_pool_data(n_pooled_days,subject,seed);
-%dates used {'Juno_AVD2_2017_07_11';'Juno_AVD2_2017_07_13';'Juno_AVD2_2017_07_19';
-%   'Juno_AVD2_2017_08_30';'Juno_AVD2_2017_12_07';'Juno_AVD2_2018_01_05';
-%   'Juno_AVD2_2018_02_21_2';'Juno_AVD2_2018_03_19_2';'Juno_AVD2_2018_04_09';
-%   'Juno_AVD2_2018_04_10'}
-% 6749 valid trials, 11443 total trials, for 10 pooled days.
-save('data\Juno_combined_30','tidy_data');
+%dates used     
+%     {'Juno_AVD2_2017_07_20_2'}
+%     {'Juno_AVD2_2017_07_26'  }
+%     {'Juno_AVD2_2017_08_02'  }
+%     {'Juno_AVD2_2017_09_06'  }
+%     {'Juno_AVD2_2017_12_13'  }
+%     {'Juno_AVD2_2018_01_23'  }
+%     {'Juno_AVD2_2018_02_27'  }
+%     {'Juno_AVD2_2018_04_05'  }
+%     {'Juno_AVD2_2018_04_09'  }
+%     {'Juno_AVD2_2018_04_10'  }
+% 6476 valid trials, 11128 total trials, for 10 pooled days.
+save('data\Juno_combined','tidy_data');
 
 subject = 'Yoko';
-n_pooled_days = 30;
+n_pooled_days = 10;
 seed = 'default';
 
 tidy_data = load_pool_data(n_pooled_days,subject,seed);
-% {'Yoko_AVD2_2018_11_16';'Yoko_AVD2_2018_11_20';'Yoko_AVD2_2018_11_27';
-% 'Yoko_AVD2_2018_11_29';'Yoko_AVD2_2018_12_13';'Yoko_AVD2_2019_01_09';
-% 'Yoko_AVD2_2019_01_10';'Yoko_AVD2_2019_01_11';'Yoko_AVD2_2019_01_18';
-% 'Yoko_AVD2_2019_01_31'}
-% 5582 valid trials, 7749 total trials, for 10 pooled daya
-save('data\Yoko_combined_30','tidy_data');
+%     {'Yoko_AVD2_2018_11_29'}
+%     {'Yoko_AVD2_2019_01_09'}
+%     {'Yoko_AVD2_2019_01_10'}
+%     {'Yoko_AVD2_2019_01_30'}
+%     {'Yoko_AVD2_2019_03_07'}
+%     {'Yoko_AVD2_2019_03_12'}
+%     {'Yoko_AVD2_2019_03_19'}
+%     {'Yoko_AVD2_2019_04_03'}
+%     {'Yoko_AVD2_2019_04_17'}
+%     {'Yoko_AVD2_2019_04_24'}
+% 5830 valid trials, 8673 total trials, for 10 pooled daya
+save('data\Yoko_combined','tidy_data');

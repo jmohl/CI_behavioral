@@ -21,18 +21,7 @@ subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
 % set models to be run
 
-%% next time running all models, refactor the model list in this way to make it more sensical
-
-%old model list
-% [1 1 x] = bayesian CI (1) unity judgement(1)
-% [2 1 x] = probabilistic fusion (2) unity (1)
-% [1 2 1] = bayesian CI (1) localization(2) with reweighting (1)
-% [2 2 1] = probabilistic fusion (2) localization(2) with reweighting (2)
-% [1 3 1] = bayesian CI (1) joint fit(3) reweighting(1)
-% [1 3 2] = bayesian CI (1) joint fit(3) model selection(2)
-% [1 3 3] = bayesian CI (1) joint fit(3) probabilistic fusion(3)
-%model_list = {[1 1 0]; [2 1 0]; [1 2 1]; [2 2 1]; [1 3 1]; [1 3 2]; [1 3 3]};
-%model_list = {[1 3 1]};
+%% Select models to run
 
 %new model list
 % [1 0 1] = bayesian CI (1) no combination (0) unity judgement task(1)
@@ -43,7 +32,7 @@ subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 % [1 2 3] = bayesian CI (1) model selection(2) joint fit(3)
 % [1 3 3] = bayesian CI (1) probabilistic fusion(3) joint fit(3)
 % [0 0 4] = no CI (0), no fusion (0), unimodal localization (4);
-model_list = {[1 0 1]; [2 0 1]; [1 1 2]; [2 1 2]; [1 1 3]; [1 2 3]; [1 3 3];[0 0 4]};
+model_list = {[1 0 1]; [2 0 1]; [1 1 2]; [2 1 2]; [1 1 3]; [1 2 3]; [1 3 3]; [0 0 4]};
 %setting fitting procedure options
 global fitoptions MAXRNG
 MAXRNG = 50;
