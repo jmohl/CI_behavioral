@@ -18,7 +18,8 @@
 % theta(2) A_sig: variance of auditory localization
 % theta(3) prior_sig: sigma on target location prior
 % theta(4) p_common: prior on common cause
-% theta(5) lambda: lapse rate, probability of random response occuring
+% theta(5) lambda_uni: lapse rate, probability randomly making unity judgement
+% theta(6) lambda_loc: lapse rate, probability of making a random saccade
 % model(1) Causal inference type (1=bayesian,2=probabilistic fusion, 3 fixed criterion (todo))
 % model(2) combination rule for localization(1=posterior reweighting, 2 = model selection, 3 = probabilistic fusion (todo, make fusion rate free param?) 4= probability matching (todo))
 % model(3) Response type (1 = unity judgement, 2 = location, 3 = joint)
@@ -60,7 +61,8 @@ V_sig = theta(1);%vis target sigma
 A_sig = theta(2);%close aud target sigma
 prior_sig = theta(3);%sigma of centrality prior
 p_common = theta(4);%prior on common cause
-lambda = theta(5); %lapse probability
+lambda_uni = theta(5); %lapse probability
+lambda_loc = theta(6);
 prior_mu = 0; %fixed for now
 
 if unisensory_loc
@@ -75,7 +77,7 @@ end
 %way to require that the likelihood is not calculated for impossible
 %values. In the future I might switch to bads or fminsearchbnd, both of
 %which are third party but allow bounds. 
-if min(theta(1:3)) <= 0.1 || max(theta(4:5)) > 1 || min(theta(4:5)) < 0
+if min(theta(1:3)) <= 0.1 || max(theta(4:6)) > 1 || min(theta(4:6)) < 0
     nll = 1e10;
     return;
 end
@@ -156,7 +158,7 @@ if unity_judge
     % Fix probabilities
     prmat_unity = min(max(prmat_unity,0),1);
     %add in chance for random response, lambda
-    prmat_unity = lambda/2 + (1-lambda)*prmat_unity;
+    prmat_unity = lambda_uni/2 + (1-lambda_uni)*prmat_unity;
 end
 
 %estimate saccade endpoint locations, integrate per condition
@@ -175,9 +177,9 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_est_AV = min(max(prmat_est_AV_c1,0),1);
     
     %add in chance for random response, lambda
-    prmat_est_V = lambda/length(xrange) + (1-lambda)*prmat_est_V;
-    prmat_est_A = lambda/length(xrange) + (1-lambda)*prmat_est_A;
-    prmat_est_AV = lambda/length(xrange) + (1-lambda)*prmat_est_AV;
+    prmat_est_V = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_V;
+    prmat_est_A = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_A;
+    prmat_est_AV = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_AV;
 
     prmat_est_A_reshape(:,1,1:size(prmat_est_A,2)) = prmat_est_A;
     prmat_sac_c2 = bsxfun(@times,prmat_est_V,prmat_est_A_reshape);
@@ -208,8 +210,8 @@ if unisensory_loc %unisensory localization fits
     prmat_est_A_uni= min(max(prmat_est_A_uni,0),1);
     
     %add lapse rate
-    prmat_est_V_uni = lambda/length(xrange) + (1-lambda)*prmat_est_V_uni; %chance to make a lapse sacade is uniform across space. which is not technically true but an approximation
-    prmat_est_A_uni = lambda/length(xrange) + (1-lambda)*prmat_est_A_uni;
+    prmat_est_V_uni = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_V_uni; %chance to make a lapse sacade is uniform across space. which is not technically true but an approximation
+    prmat_est_A_uni = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_A_uni;
     
 end
     

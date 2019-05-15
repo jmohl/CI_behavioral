@@ -22,7 +22,7 @@ try
 end
 
 %% Model and subject to plot
-subject = 'H06';
+subject = 'Juno';
 model = [1 1 3];
 
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));

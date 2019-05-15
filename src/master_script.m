@@ -39,10 +39,10 @@ MAXRNG = 50;
 fitoptions.binsize = 1; %size of bins used for responses, in degrees.
 fitoptions.load_saved_fits = 1; %load saved fits, if they exist
 fitoptions.make_plots = 0;
-fitoptions.n_iterations = 5; %set option to repeat fminsearch for n times
-fitoptions.UBND = [6 15 40 .9 .25]; %upper bounds on theta for grid search
-fitoptions.LBND = [.5 1 5 .1 .01]; %lower bounds on theta for grid search
-fitoptions.grid_fineness = 4; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 
+fitoptions.n_iterations = 3; %set option to repeat fminsearch for n times
+fitoptions.UBND = [6 15 40 .9 .25 .25]; %upper bounds on theta for grid search
+fitoptions.LBND = [.5 1 5 .1 .01, .01]; %lower bounds on theta for grid search
+fitoptions.grid_fineness = 3; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 
 fitoptions.fmin_options = optimset('MaxFunEvals',1000,'MaxIter',1000, 'TolFun', 1e-2, 'TolX',1e-2);
 fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/fitoptions.binsize + 1);
 fitoptions.eval_midpoints = linspace(-MAXRNG+fitoptions.binsize/2,MAXRNG-fitoptions.binsize/2,length(fitoptions.eval_range)-1);
