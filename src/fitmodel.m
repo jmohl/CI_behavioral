@@ -54,18 +54,8 @@ n_iter = fitoptions.n_iterations;
 %step 1: evaluate likelihood at all values on grid, pick 5 best points
 fprintf('Step 1:grid search\n')
 tic
-theta_range = zeros(length(UBND),fitoptions.grid_fineness);
-for ii = 1:length(UBND)
-    theta_range(ii,:) = linspace(UBND(ii),LBND(ii),fitoptions.grid_fineness);
-end
-[t1,t2,t3,t4,t5,t6] = ndgrid(theta_range(1,:),theta_range(2,:),theta_range(3,:),theta_range(4,:),theta_range(5,:),theta_range(6,:));
-grid_like = zeros(size(t1));
-for grid_pt = 1:numel(t1)
-    this_theta = [t1(grid_pt) t2(grid_pt) t3(grid_pt) t4(grid_pt) t5(grid_pt) t6(grid_pt)];
-    grid_like(grid_pt) = datalike_minsearch(this_theta);
-end
-[~,min_inds] = sort(grid_like(:));
-best_thetas =[t1(min_inds(1:n_iter)) t2(min_inds(1:n_iter)) t3(min_inds(1:n_iter)) t4(min_inds(1:n_iter)) t5(min_inds(1:n_iter)) t6(min_inds(1:n_iter))];
+best_thetas = grid_search(datalike_minsearch);
+best_thetas = best_thetas(1:n_iter,:); %pick only the desired number to iterate on
 toc
 %step 2: use best grid params as starting point for fminsearch. 
 fit_thetas = zeros(size(best_thetas));

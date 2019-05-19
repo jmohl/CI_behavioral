@@ -48,7 +48,7 @@ end
 
 for mi = 1:size(model_list,1)
     if ~isempty(m.models)&& ismember(model_list{mi},vertcat(m.models{:}),'rows')
-        fprintf('skipping model [%d %d %d] because already saved \n',model_list{mi})
+        fprintf('skipping model [%d %d %d %d] because already saved \n',model_list{mi})
         continue
     end
     if fitoptions.cross_validate % if using cross validation
@@ -59,7 +59,7 @@ for mi = 1:size(model_list,1)
         for ki = 1:fitoptions.kfolds
             train_data = AV_train{ki};
             test_data = AV_test{ki};
-            fprintf('Fitting Subject: %s, Model: %d %d %d, k-fold:%d\n',subject,model, ki)
+            fprintf('Fitting Subject: %s, Model: %d %d %d %d, k-fold:%d\n',subject,model, ki)
             [conditions,responses] = get_prepro_data(train_data,model);
             [fit_theta{ki},~,fit_dist{ki}]=fitmodel(conditions,responses,model);
             [conditions,responses] = get_prepro_data(test_data,model);
@@ -72,7 +72,7 @@ for mi = 1:size(model_list,1)
             [m.conditions{end+1},m.responses{end+1}] = get_prepro_data(data,model); %for conditions and responses (used for plotting), return whole dataset
     else
         model = model_list{mi}; 
-        fprintf('Fitting Subject: %s, Model: %d %d %d\n',subject,model)
+        fprintf('Fitting Subject: %s, Model: %d %d %d %d\n',subject,model)
         m.models{end+1} = model;
         [conditions,responses] = get_prepro_data(data,model);
         [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model);

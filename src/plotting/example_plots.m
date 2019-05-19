@@ -22,8 +22,8 @@ try
 end
 
 %% Model and subject to plot
-subject = 'Juno';
-model = [1 1 3];
+subject = 'Yoko_right';
+model = [1 1 2];
 
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
@@ -176,9 +176,9 @@ for data_ind = 1:3
     
 end
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
+subjects = {'Juno_left'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
-model = [1 1 3];
+model = [1 1 2];
 for si = 1:length(subjects)
     subject = subjects{si};
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
@@ -238,9 +238,9 @@ for si = 1:length(subjects)
     saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
 end
 %% plot 3, take 2, plotting every pair from one side.
-subject = 'H08';
-A_tars = [-24 -12];
-V_tars = [-24 -18 -12 -6 12];
+subject = 'Juno_left';
+A_tars = [-24 -6];
+V_tars = [-24 -18 -12 -6];
 %A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
 model = [1 1 3];
@@ -249,7 +249,7 @@ m=m.m;
 
 xlocs = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
-if model(2) == 3
+if model(3) == 3
     saccades_all = m.responses{model_ind}{2};
     predicted_all = m.fit_dist{model_ind}{2};
 else
@@ -263,7 +263,7 @@ set(gcf,'Position',[100,60,1600,500])
 pind = 1;
 for V_tar = V_tars
     for A_ind = A_tars
-        subplot(5,2,pind)
+        subplot(4,2,pind)
         tar_pair = [A_ind,V_tar];
         this_ind = ismember(conditions,tar_pair,'rows');
         saccades = saccades_all(this_ind,:,:);
@@ -291,19 +291,19 @@ for V_tar = V_tars
         ylabel(V_tar)
         set(gca,'box','off')
         %set bounds that focus on the data instead of the whole range
-        %min_tar = min(tar_pair);
-        %max_tar = max(tar_pair);
-        %xlim([min_tar - 15, max_tar + 15])
-        xlim([-30,15])
+        min_tar = min(tar_pair);
+        max_tar = max(tar_pair);
+        xlim([min_tar - 15, max_tar + 15])
+        %xlim([-30,15])
         pind = pind + 1;
     end
 end
 saveas(gcf,sprintf('%s\\locex_%s_left_%s',figpath,subject,string(get_model_names(model))),'png');
 %% plot 4, splitting up to compare fits in each dimension
-subject = 'Yoko';
+subject = 'Yoko_right';
 A_tars = [-24 -6];
-V_tars = [-24 -18 -12 -6 12];
-%A_tars = A_tars * -1; V_tars = V_tars * -1;
+V_tars = [-24 -18 -12 -6];
+A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
 model = [1 1 3];
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
@@ -349,7 +349,7 @@ for V_tar = V_tars
         projected_pred = norm_predicted(:,I_mat);
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
         title(sprintf(' %d A, %d V',A_ind, V_tar));
-        xlim([-35 15])
+        xlim([-15 35])
         
         norm_predicted(:,I_mat) = 0; %remove points from diagonal
         
@@ -360,9 +360,8 @@ for V_tar = V_tars
         projected_pred = squeeze(sum(norm_predicted,2)/2);%divide by 2 to normalize
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
         title(sprintf('%d A',A_ind));
-        xlim([-35 15])
-        
-        
+        xlim([-15 35])
+              
         subplot(1,3,3)
         sac_bar = bar(xlocs,V_sacs(:));
         sac_bar(1).FaceColor = [.5 .5 1];
@@ -370,8 +369,7 @@ for V_tar = V_tars
         projected_pred = squeeze(sum(norm_predicted,3)/2);
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]);
         title(sprintf('%d V',V_tar));
-        xlim([-35 15])
-        
+        xlim([-15 35])
         
         saveas(gcf,sprintf('%s\\split_by_type\\%s_%d%d',figpath,subject,A_ind,V_tar),'png');
     end
@@ -475,7 +473,11 @@ param_sd_table.Properties.RowNames = subject_list;
 human_table = param_table(3:end,:);
 grpstats(human_table,[],{'mean','std'})
 %% unisensory localization
-model = [0 0 4];
+
+subject = 'Juno';
+m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
+m=m.m;
+model = [0 0 4 2];
 
 xlocs = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
@@ -503,7 +505,7 @@ for A_ind = 1:length(conditions_A)
     set(gca,'box','off')
 end
 set(gcf,'Position',[0,0,1400,1400])
-saveas(gcf,sprintf('%s\\%s_unimodal_A',figpath,subject),'png');
+saveas(gcf,sprintf('%s\\%s_unimodal_A_%d%d%d%d',figpath,subject,model),'png');
 
 figure
 for V_ind = 1:length(conditions_V)
@@ -523,5 +525,5 @@ for V_ind = 1:length(conditions_V)
 end
 set(gcf,'Position',[0,0,1400,1400])
 
-saveas(gcf,sprintf('%s\\%s_unimodal_V',figpath,subject),'png');
+saveas(gcf,sprintf('%s\\%s_unimodal_V_%d%d%d%d',figpath,subject,model),'png');
 

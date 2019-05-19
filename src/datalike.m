@@ -20,11 +20,11 @@
 % theta(4) p_common: prior on common cause
 % theta(5) lambda_uni: lapse rate, probability randomly making unity judgement
 % theta(6) lambda_loc: lapse rate, probability of making a random saccade
+
 % model(1) Causal inference type (1=bayesian,2=probabilistic fusion, 3 fixed criterion (todo))
 % model(2) combination rule for localization(1=posterior reweighting, 2 = model selection, 3 = probabilistic fusion (todo, make fusion rate free param?) 4= probability matching (todo))
 % model(3) Response type (1 = unity judgement, 2 = location, 3 = joint)
 %
-
 
 %% start of likelihood code - currently only working for unity judgement
 function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
@@ -56,7 +56,9 @@ switch model(3)
         unisensory_loc = 1;
 end
 
+has_response_prior = model(4)==2;
 %give fit parameters sensible names
+%minimum parameter set
 V_sig = theta(1);%vis target sigma
 A_sig = theta(2);%close aud target sigma
 prior_sig = theta(3);%sigma of centrality prior
@@ -64,6 +66,14 @@ p_common = theta(4);%prior on common cause
 lambda_uni = theta(5); %lapse probability
 lambda_loc = theta(6);
 prior_mu = 0; %fixed for now
+
+%optional parameters
+if has_response_prior %if motor response bias is included
+    resp_mu_A = theta(7);
+    resp_mu_V = theta(8);
+    resp_sig_A = theta(9);
+    resp_sig_V = theta(10);
+end
 
 if unisensory_loc
     conds_A = conditions{1};
@@ -116,7 +126,7 @@ if location_estimate || unisensory_loc
     int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %int pdf = 1x(xA)x(xV)x(eval_range) array. so for a given value of xA and xv, pdf is in 4th dim
     
     [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
-    
+        
     % combine likelihoods weighted by posterior on common cause
     switch combination_rule
         case 1 %if bayesian reweighting
@@ -163,14 +173,27 @@ end
 
 %estimate saccade endpoint locations, integrate per condition
 if location_estimate %this is the location estimate when cause is unknown. Not sure if right.
+
+    if has_response_prior
+        resp_prior_A = .5 * normpdf(xrange,-resp_mu_A,resp_sig_A) + .5* normpdf(xrange,resp_mu_A,resp_sig_A);
+        resp_prior_V = .5 * normpdf(xrange,-resp_mu_V,resp_sig_A) + .5* normpdf(xrange,resp_mu_V,resp_sig_V);
+        resp_A =A_c2_pdf .* resp_prior_A; % doing this makes the probabilities really small, so might need to rescale by the total so it sums to 1.
+        resp_V =V_c2_pdf .* resp_prior_V;
+        resp_AV =  AV_c1_pdf .* (0.5*(resp_prior_A) + 0.5*(resp_prior_V)); %TODO probably not this
+    else
+        resp_A =A_c2_pdf;
+        resp_V =V_c2_pdf;
+        resp_AV = AV_c1_pdf;
+    end
+    
     prmat_est_AV_c1 = zeros(numel(conds_V), length(xrange));
-    prmat_est_AV_c1(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), AV_c1_pdf), 2), 3); %Estimate for single saccade conditions, same for sA and sV, so labeling AV
+    prmat_est_AV_c1(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), resp_AV), 2), 3); %Estimate for single saccade conditions, same for sA and sV, so labeling AV
     
     prmat_est_V_c2 = zeros(numel(conds_V), length(xrange));
-    prmat_est_V_c2(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), V_c2_pdf), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
+    prmat_est_V_c2(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), resp_V), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
     
     prmat_est_A_c2 = zeros(numel(conds_A), length(xrange));
-    prmat_est_A_c2(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), A_c2_pdf), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
+    prmat_est_A_c2(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), resp_A), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
     % Fix probabilities
     prmat_est_V= min(max(prmat_est_V_c2,0),1);
     prmat_est_A= min(max(prmat_est_A_c2,0),1);
@@ -200,14 +223,26 @@ if unisensory_loc %unisensory localization fits
     xpdf_A = bsxfun_normpdf(xrange_A, conds_A,A_sig);
     xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 2));
     
+    % add in a response prior that is a mixture of normals. Must be
+    % symmetric here around 0 to cut down on extra parameters
+    if has_response_prior
+        resp_prior_A = .5 * normpdf(xrange,-resp_mu_A,resp_sig_A) + .5* normpdf(xrange,resp_mu_A,resp_sig_A);
+        resp_prior_V = .5 * normpdf(xrange,-resp_mu_V,resp_sig_A) + .5* normpdf(xrange,resp_mu_V,resp_sig_V);
+        resp_A =A_seg_pdf_rescale .* resp_prior_A; % doing this makes the probabilities really small, so might need to rescale by the total so it sums to 1.
+        resp_V =V_seg_pdf_rescale .* resp_prior_V;
+    else
+        resp_A =A_seg_pdf_rescale;
+        resp_V =V_seg_pdf_rescale;
+    end
+    
     prmat_est_V_uni = zeros(numel(conds_V), length(xrange));
-    prmat_est_V_uni(:,:) = qtrapz(bsxfun(@times, xpdf_V, V_seg_pdf_rescale), 2);
+    prmat_est_V_uni(:,:) = qtrapz(bsxfun(@times, xpdf_V, resp_V), 2);
     prmat_est_A_uni = zeros(numel(conds_A), length(xrange));
-    prmat_est_A_uni(:,:) = qtrapz(bsxfun(@times, xpdf_A, A_seg_pdf_rescale), 2);
+    prmat_est_A_uni(:,:) = qtrapz(bsxfun(@times, xpdf_A, resp_A), 2);
     
     %fix probabilities
-    prmat_est_V_uni= min(max(prmat_est_V_uni,0),1);
-    prmat_est_A_uni= min(max(prmat_est_A_uni,0),1);
+    prmat_est_V_uni= rdivide(min(max(prmat_est_V_uni,0),1),sum(prmat_est_V_uni,2));%division here rescales so sums to 1.
+    prmat_est_A_uni= rdivide(min(max(prmat_est_A_uni,0),1),sum(prmat_est_A_uni,2));
     
     %add lapse rate
     prmat_est_V_uni = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_V_uni; %chance to make a lapse sacade is uniform across space. which is not technically true but an approximation
