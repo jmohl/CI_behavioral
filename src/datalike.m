@@ -29,6 +29,7 @@
 %% start of likelihood code - currently only working for unity judgement
 function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 % Causal inference type
+global fitoptions %not sure if this slows things down or not
 CI_type = model(1);
 %localization strategy
 combination_rule = model(2); %rule for combining sensory inputs, based on causal judgement 
@@ -56,7 +57,7 @@ switch model(3)
         unisensory_loc = 1;
 end
 
-has_response_prior = model(4)==2;
+prior_type = model(4);
 %give fit parameters sensible names
 %minimum parameter set
 V_sig = theta(1);%vis target sigma
@@ -68,7 +69,7 @@ lambda_loc = theta(6);
 prior_mu = 0; %fixed for now
 
 %optional parameters
-if has_response_prior %if motor response bias is included
+if ~prior_type == 1 %if non-normal prior is used
     resp_mu_A = theta(7);
     resp_mu_V = theta(8);
     resp_sig_A = theta(9);
@@ -95,39 +96,80 @@ xrange = eval_midpoints; %range for integration.
 if unisensory_loc
     xrange_V(1,:) = xrange;
     xrange_A(1,:) = xrange;
+    sA(:,1) = xrange;
+    sV(:,1) = xrange;
 else
     %for multisensory trials response distributions are 2 dimensional
     %(joint A and V saccades)
+    sA(:,1) = xrange;
+    sV(:,1) = xrange;
     xrange_V(1,:,1) = xrange;
     xrange_A(1,1,:) = xrange;
 end
 
-%% find the posterior distribution for C = 1 case for all values of xa and xv;
+%% (1) get sensory likelihood for visual and auditory p(xa|sa)
+if prior_type ~= 1
+    %normal prior makes this step irrelevant 
+    likelihood_sA = bsxfun_normpdf(xrange_A,sA,A_sig);
+    likelihood_sV = bsxfun_normpdf(xrange_V,sV,V_sig);
+end
+%% (2) get sensory priors 
+if prior_type ~= 1
+    if unisensory_loc
+        locations = fitoptions.priorloc;
+        prior_sA = get_unisensory_prior(prior_type,xrange,locations,prior_sig);
+        prior_sV = get_unisensory_prior(prior_type,xrange,locations,prior_sig);
+    else
+        prior_c1 = get_joint_prior();
+        prior_c2 = get_joint_prior();
+    end
+    
+end
+
+%% (3) find the posterior distribution for C = 1 case for all values of xa and xv;
 
 switch CI_type 
     case 1 % bayesian causal inference posterior
-        c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common);
-        if unity_judge
-               %judgement rule, if post > 0.5, choose unity
-            w1_unity = zeros(size(c1post));
-            w1_unity(c1post > 0.5) = 1;
-            w1_unity(c1post == 0.5) = 0.5;
-        end
-    case 2
-        c1post = repmat(p_common,1,length(xrange),length(xrange));
-        if unity_judge
-            %if probabilistic fusion rule, judgement is fixed
-            w1_unity = c1post;
+        if prior_type == 1
+            %c1 post is analytically solvable when prior is normal
+            c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common);
+        else
+            %for all cases with non-normal priors, need to use numerical
+            %methods
+           
         end
 end
 
-%% get likelihood functions for A location and V location
-if location_estimate || unisensory_loc
-    int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %int pdf = 1x(xA)x(xV)x(eval_range) array. so for a given value of xA and xv, pdf is in 4th dim
-    
-    [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
+%% (4) get posterior p(sA,sV|xa,xv,C)
+
+if location_estimate
+    if prior_type == 1
+        %analytic solutions available for both of these cases, assuming a
+        %normal prior
+        int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %int pdf = 1x(xA)x(xV)x(eval_range) array. so for a given value of xA and xv, pdf is in 4th dim
+        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
+    else
         
+    end
     % combine likelihoods weighted by posterior on common cause
+    %think this is more appropriately moved to the end of hte decision rule
+    %step
+end
+
+if unisensory_loc
+    if prior_type == 1
+        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
+        post_sA = A_seg_pdf;
+        post_sV = V_seg_pdf;
+    else
+       post_sA =likelihood_sA.*prior_sA';
+       post_sA = post_sA./(1/sum(post_sA,'all')); 
+       post_sV =likelihood_sV.*prior_sV';
+       post_sV = post_sV./(1/sum(post_sV,'all')); 
+    end  
+end
+%% (5) Incorporate decision rule
+if location_estimate
     switch combination_rule
         case 1 %if bayesian reweighting
             AV_c1_pdf = bsxfun(@times,c1post, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.
@@ -146,19 +188,60 @@ if location_estimate || unisensory_loc
             A_c2_pdf = bsxfun(@times,(1-fixed_weights), A_seg_pdf);
         case 4 % probability matching
             %todo
-            
     end
 end
-
-%% Marginalize over internal variables using numerical integration
-%integrate over xa xv values for every condition in condition vector
-% try both using qtrapz adapted from acerbi
+if unity_judge
+    switch CI_type
+        case 1
+            %judgement rule, if post > 0.5, choose unity
+            w1_unity = zeros(size(c1post));
+            w1_unity(c1post > 0.5) = 1;
+            w1_unity(c1post == 0.5) = 0.5;
+    case 2
+        c1post = repmat(p_common,1,length(xrange),length(xrange));
+        if unity_judge
+            %if probabilistic fusion rule, judgement is fixed
+            w1_unity = c1post;
+        end
+    end
+end
+    
+%% (6) Marginalize over internal variables using numerical integration, to get estimates in terms of target locations
+% integrate over xa xv values for every condition in condition vector
 if ~unisensory_loc
     xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
-    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volume element
+    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volume element, this doesn't matter if the grid volumn = 1
     xpdf_A = bsxfun_normpdf(xrange_A, conds_A, A_sig);
-    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 3));  % Not multiplying by volume element(JM?)
+    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 3));  % Not multiplying by volume element
+else
+    xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
+    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2));
+    xpdf_A = bsxfun_normpdf(xrange_A, conds_A, A_sig);
+    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 2)); 
 end
+
+%unisensory localization fits
+if unisensory_loc 
+    post_sA_rescale(1,:,:) = squeeze(post_sA);
+    post_sV_rescale(1,:,:) = squeeze(post_sV);    
+
+    prmat_est_A = zeros(numel(conds_A), length(xrange));
+    prmat_est_A(:,:) = qtrapz(bsxfun(@times, xpdf_A, post_sA_rescale), 2);
+    prmat_est_V = zeros(numel(conds_V), length(xrange));
+    prmat_est_V(:,:) = qtrapz(bsxfun(@times, xpdf_V, post_sV_rescale), 2);
+    %fix probabilities
+    prmat_est_V= rdivide(min(max(prmat_est_V,0),1),sum(prmat_est_V,2));%division here rescales so sums to 1.
+    prmat_est_A= rdivide(min(max(prmat_est_A,0),1),sum(prmat_est_A,2));
+%     figure % for debugging
+%     hold on
+%     plot(xrange,prmat_est_A(1,:))
+%     plot(xrange,prmat_est_A(2,:))
+%     plot(xrange,prmat_est_A(3,:))
+%     plot(xrange,prmat_est_A(4,:))
+%     xticks(conds_A)
+%     grid on
+end
+    
 %estimate percent of single saccade trials, integrate per condition
 if unity_judge
     prmat_unity = zeros(numel(conds_V), 2);
@@ -173,8 +256,7 @@ end
 
 %estimate saccade endpoint locations, integrate per condition
 if location_estimate %this is the location estimate when cause is unknown. Not sure if right.
-
-    if has_response_prior
+    if normal_prior %JM todo remove
         resp_prior_A = .5 * normpdf(xrange,-resp_mu_A,resp_sig_A) + .5* normpdf(xrange,resp_mu_A,resp_sig_A);
         resp_prior_V = .5 * normpdf(xrange,-resp_mu_V,resp_sig_A) + .5* normpdf(xrange,resp_mu_V,resp_sig_V);
         resp_A =A_c2_pdf .* resp_prior_A; % doing this makes the probabilities really small, so might need to rescale by the total so it sums to 1.
@@ -195,6 +277,7 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_est_A_c2 = zeros(numel(conds_A), length(xrange));
     prmat_est_A_c2(:,:) = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), resp_A), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
     % Fix probabilities
+    %JM todo make sure to rescale here, currently am not
     prmat_est_V= min(max(prmat_est_V_c2,0),1);
     prmat_est_A= min(max(prmat_est_A_c2,0),1);
     prmat_est_AV = min(max(prmat_est_AV_c1,0),1);
@@ -214,50 +297,13 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     end
     prmat_sac = prmat_sac_c2 + prmat_est_AV_diag;
 end
-
-if unisensory_loc %unisensory localization fits
-    A_seg_pdf_rescale(1,:,:) = squeeze(A_seg_pdf);
-    V_seg_pdf_rescale(1,:,:) = squeeze(V_seg_pdf);
-    xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
-    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2));
-    xpdf_A = bsxfun_normpdf(xrange_A, conds_A,A_sig);
-    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 2));
-    
-    % add in a response prior that is a mixture of normals. Must be
-    % symmetric here around 0 to cut down on extra parameters
-    if has_response_prior
-        resp_prior_A = .5 * normpdf(xrange,-resp_mu_A,resp_sig_A) + .5* normpdf(xrange,resp_mu_A,resp_sig_A);
-        resp_prior_V = .5 * normpdf(xrange,-resp_mu_V,resp_sig_A) + .5* normpdf(xrange,resp_mu_V,resp_sig_V);
-        resp_A =A_seg_pdf_rescale .* resp_prior_A; % doing this makes the probabilities really small, so might need to rescale by the total so it sums to 1.
-        resp_V =V_seg_pdf_rescale .* resp_prior_V;
-    else
-        resp_A =A_seg_pdf_rescale;
-        resp_V =V_seg_pdf_rescale;
-    end
-    
-    prmat_est_V_uni = zeros(numel(conds_V), length(xrange));
-    prmat_est_V_uni(:,:) = qtrapz(bsxfun(@times, xpdf_V, resp_V), 2);
-    prmat_est_A_uni = zeros(numel(conds_A), length(xrange));
-    prmat_est_A_uni(:,:) = qtrapz(bsxfun(@times, xpdf_A, resp_A), 2);
-    
-    %fix probabilities
-    prmat_est_V_uni= rdivide(min(max(prmat_est_V_uni,0),1),sum(prmat_est_V_uni,2));%division here rescales so sums to 1.
-    prmat_est_A_uni= rdivide(min(max(prmat_est_A_uni,0),1),sum(prmat_est_A_uni,2));
-    
-    %add lapse rate
-    prmat_est_V_uni = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_V_uni; %chance to make a lapse sacade is uniform across space. which is not technically true but an approximation
-    prmat_est_A_uni = lambda_loc/length(xrange) + (1-lambda_loc)*prmat_est_A_uni;
-    
-end
-    
-
-%% calculate negative log likelihood of data
+%% (7) calculate negative log likelihood of data under this posterior
 if unisensory_loc
-    nll_A = -1 * sum(responses{1}.*log(prmat_est_A_uni),'all');
-    nll_V = -1 * sum(responses{2}.*log(prmat_est_V_uni),'all');
+    nll_A = -1 * sum(responses{1}.*log(prmat_est_A),'all');
+    nll_V = -1 * sum(responses{2}.*log(prmat_est_V),'all');
     nll = nll_A + nll_V;
-    prmat{1} = prmat_est_A_uni;
-    prmat{2} = prmat_est_V_uni;
+    prmat{1} = prmat_est_A;
+    prmat{2} = prmat_est_V;
 
 elseif unity_judge && location_estimate %when fitting jointly
     nll_u = -1*sum(responses{1}.*log(prmat_unity));

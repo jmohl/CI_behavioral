@@ -1,4 +1,4 @@
-%% calculate probability of common cause
+%% calculate posterior probability of common cause analytically
 %
 % -------------------
 % Jeff Mohl
@@ -7,7 +7,9 @@
 %
 % Description: if inputs xa and xv are scalar, returns scalar
 % probability of common cause between 0 and 1. If mu inputs are vectors,
-% returns an array of probabilities for every combination of xa, xv.
+% returns an array of probabilities for every combination of xa, xv. This
+% is for the analytically solvable case where the prior is a single normal
+% distribution.
 %
 % Inputs:
 % A_mu, V_mu, prior_mu: means of A, V, and prior components
