@@ -56,6 +56,7 @@ for mi = 1:size(model_list,1)
         fit_dist = cell(fitoptions.kfolds,1);
         test_nll = cell(fitoptions.kfolds,1);
         model = model_list{mi};
+        
         for ki = 1:fitoptions.kfolds
             train_data = AV_train{ki};
             test_data = AV_test{ki};

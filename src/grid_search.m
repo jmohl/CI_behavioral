@@ -17,21 +17,20 @@
 %best row followed by the second best etc for all combinations of initial
 %parameters.
 
-function best_thetas = grid_search(datalike_minsearch)
-global fitoptions
+function best_thetas = grid_search(datalike_minsearch,UBND,LBND,grid_fineness)
 
 %make grid
-for ii = 1:length(fitoptions.UBND)
-    theta_range{ii} = linspace(fitoptions.UBND(ii),fitoptions.LBND(ii),fitoptions.grid_fineness);
+for ii = 1:length(UBND)
+    theta_range{ii} = linspace(UBND(ii),LBND(ii),grid_fineness);
 end
-[theta_pts{1:length(fitoptions.UBND)}] = ndgrid(theta_range{:});
+[theta_pts{1:length(UBND)}] = ndgrid(theta_range{:});
 
 %get likelihood at each grid point
  grid_like = arrayfun(@(varargin) datalike_minsearch(cell2mat(varargin)), theta_pts{:});
 %get the best parameter values, in order
 [~,min_inds] = sort(grid_like(:));
 find_best_values = @(ind,min_inds) theta_pts{ind}(min_inds);
-for this_param = 1:length(fitoptions.UBND)
+for this_param = 1:length(UBND)
     best_thetas(:,this_param) = find_best_values(this_param,min_inds);
 end
 

@@ -59,16 +59,16 @@ plot_sac_by_sep(conditions,responses,fit_dist);
 %% plot 1: example 2d joint distribution plots
 %load fit data
 
-subject = 'Yoko';
+subject = 'Juno';
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 % set desired model and range
-model = [1 1 3];%keep an eye on this in the future, might change
+model = [1 1 2 1];%keep an eye on this in the future, might change
 locations = m.fitoptions.eval_range;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');
 
 fit_dist = m.fit_dist{model_ind};
-if length(fit_dist) > 1
+if iscell(fit_dist)
     fit_dist = fit_dist{2};
 end
 ex_conds = [1:20];
@@ -81,12 +81,12 @@ for ic = ex_conds
     xlabel('Auditory Location')
     ylabel('Visual Location')
     title(sprintf('%d Aud, %d Vis pair', m.conditions{model_ind}(ic,:)))
-    saveas(gcf,sprintf('%s\\%s%dA%dV_pdf',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
+%     saveas(gcf,sprintf('%s\\%s%dA%dV_pdf',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
 end
 
 %actual data
 resp_dist = m.responses{model_ind};
-if length(resp_dist) > 1
+if iscell(resp_dist)
     resp_dist = resp_dist{2};
 end
 ex_conds = [1:20];
@@ -176,9 +176,9 @@ for data_ind = 1:3
     
 end
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subjects = {'Juno_left'};%,'Yoko','H05','H03','H08'};
+subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
-model = [1 1 2];
+model = [1 1 2 1];
 for si = 1:length(subjects)
     subject = subjects{si};
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
@@ -477,7 +477,7 @@ grpstats(human_table,[],{'mean','std'})
 subject = 'Juno';
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
-model = [0 0 4 2];
+model = [0 0 4 3];
 
 xlocs = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');

@@ -101,10 +101,10 @@ end
 
 xrange = eval_midpoints; %range for integration.
 if unisensory_loc
-    xrange_V(1,:) = xrange;
-    xrange_A(1,:) = xrange;
-     sA(:,1) = xrange;
-     sV(:,1) = xrange;
+    xrange_V(:,1) = xrange;
+    xrange_A(:,1) = xrange;
+    sA(1,:) = xrange;
+    sV(1,:) = xrange;
 else
     %for multisensory trials response distributions are 2 dimensional
     %(joint A and V saccades)
@@ -112,10 +112,10 @@ else
     %is why these variables are being set up in this way. Eventually
     %decided to split the integrals to keep the number of elements down for
     %integration.
-%     sA(1,1,1,:) = xrange;
-%     sV(1,1,1,:) = xrange;
-    xrange_A(1,1,:) = xrange;
-    xrange_V(1,:,1) = xrange;
+    sA(1,1,1,:) = xrange;
+    sV(1,1,1,:) = xrange;
+    xrange_A(1,:,1) = xrange;
+    xrange_V(1,1,:) = xrange;
 end
 
 %% (1) get sensory likelihood for visual and auditory p(xa|sa)
@@ -237,9 +237,9 @@ end
 % integrate over xa xv values for every condition in condition vector
 if ~unisensory_loc
     xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
-    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volume element, this doesn't matter if the grid volumn = 1
+    xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 3)); % Not multiplying by volume element, this doesn't matter if the grid volumn = 1
     xpdf_A = bsxfun_normpdf(xrange_A, conds_A, A_sig);
-    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 3));  % Not multiplying by volume element
+    xpdf_A = bsxfun(@rdivide, xpdf_A, qtrapz(xpdf_A, 2));  % Not multiplying by volume element
 else %unisensory loc just uses 3d grids
     xpdf_V = bsxfun_normpdf(xrange_V, conds_V,V_sig);
     xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2));
@@ -275,8 +275,8 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_AV_c1 = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), resp_AV_c1), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
     prmat_A_c2 = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), resp_A_c2), 2), 3);
     prmat_V_c2 = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), resp_V_c2), 2), 3);
-    prmat_V_shape(:,:,1) = prmat_V_c2;
-    prmat_A_shape(:,1,:) = prmat_A_c2;
+    prmat_V_shape(:,1,:) = prmat_V_c2;
+    prmat_A_shape(:,:,1) = prmat_A_c2;
     prmat_AV_c2 = bsxfun(@times,prmat_A_shape,prmat_V_shape);%problem here is normalizing to make the probabilities match, because this is going to significantly reduce them
     %renormalize so that total probability will sum to 1 for each condition
     %after adding c=1 case

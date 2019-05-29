@@ -25,15 +25,10 @@
 function [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model)
 
 global fitoptions
-% set relevant variables from options
-UBND = fitoptions.UBND;
-LBND = fitoptions.LBND;
-debug = 0;
-
 %% start of actual fitting procedure
 %adapting from Acerbi, this fitting procedure will progress in 2 steps to
 %start. First, a grid spanning reasonable paramter space will be evaluated,
-%and the best ## points will be chosen and used as initial theta values for
+%and the best n_iterations points will be chosen and used as initial theta values for
 %fminsearch. In the future might switch from fminsearch to bads if that
 %works better.
 
@@ -50,12 +45,12 @@ debug = 0;
 % timeit(f)
 datalike_minsearch = @(theta)datalike(conditions,responses,theta,model,fitoptions.eval_midpoints);
 
-n_iter = fitoptions.n_iterations;
-%step 1: evaluate likelihood at all values on grid, pick 5 best points
+%step 1: evaluate likelihood at all values on grid, pick n_iteration best points
 fprintf('Step 1:grid search\n')
+[UBND,LBND] = get_ini_params(model); %inital points are hardcoded below
 tic
-best_thetas = grid_search(datalike_minsearch);
-best_thetas = best_thetas(1:n_iter,:); %pick only the desired number to iterate on
+best_thetas = grid_search(datalike_minsearch,UBND,LBND,fitoptions.grid_fineness);
+best_thetas = best_thetas(1:fitoptions.n_iterations,:); %pick only the desired number to iterate on
 toc
 %step 2: use best grid params as starting point for fminsearch. 
 fit_thetas = zeros(size(best_thetas));
@@ -73,26 +68,40 @@ fit_theta = fit_thetas(best_ind,:);
 
 [~,fit_dist] = datalike(conditions,responses,fit_theta,model,fitoptions.eval_midpoints);
 
-if debug 
-    %plot some things for comparing with behavior
-    if model(2) == 1
-        plot_psingle(responses,conditions,fit_dist);
-    end
-    if model(2) == 2
-        for ic = 1:length(conditions)
-            %plotting the real saccade distributions and those predicted by
-            %the model for every condition
-            plot_modelhist(responses(ic,:),fit_dist(ic,:),eval_midpoints)
-            title(sprintf('%d A %d V',conditions(ic,:)))
-            set(gcf,'Position',[100,60,1049,895])
-        end
-    end
-        
+end
+
+function [UBND,LBND] = get_ini_params(model)
+
+% model values
+% model(1) = CI type: Bayes (1) or probabilistic fusion (2)
+% model(2) = stimulus fusion: Bayes reweight(1), model selection(2), probabilistic fusion (3)
+% model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
+% model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
+
+% potential theta values
+% Included in all models:
+% theta(1) = Visual sigma
+% theta(2) = auditory sigma
+% theta(3) = prior sigma, variance of prior (not used in discrete prior case)
+% theta(4) = p_common, prior probability of common cause
+% theta(5) = lapse probability on unity judgement
+% Optional thetas
+% theta(6) = lapse probability, localization (random saccade location)
+% theta(7) = prior mu (when using mixture of normals prior)
+
+UBND = [6 15 40 .9 .25];
+LBND = [.5 1 5 .1 0];
+
+if model(3) > 1
+    UBND = [UBND,.1];
+    LBND = [LBND,0];
+end
+if model(4) == 3 
+    UBND = [UBND,24];
+    LBND = [LBND,0];
 end
 
 end
-
-
 
 
 
