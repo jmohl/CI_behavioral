@@ -41,6 +41,8 @@
 %% start of likelihood code - currently only working for unity judgement
 function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 %set up options 
+incorporate_unity_lapse = 1; %testing this feature
+
 CI_type = model(1);
 combination_rule = model(2); %rule for combining sensory inputs, based on causal judgement 
 switch model(3)
@@ -73,13 +75,12 @@ A_sig = theta(2);%close aud target sigma
 prior_sig = theta(3);%sigma of centrality prior
 p_common = theta(4);%prior on common cause
 lambda_uni = theta(5); %lapse probability
-prior_mu = 0;
+lambda_loc = 0;
+prior_mu1 = 0;
+
 %optional parameters
-if location_estimate || unisensory_loc
-    lambda_loc =0;%JM todo just remove this theta(6);
-end
 if prior_type == 3 %if mixture prior used
-    prior_mu = theta(7);
+    prior_mu = theta(6);
 end
 
 if unisensory_loc
@@ -103,57 +104,49 @@ xrange = eval_midpoints; %range for integration.
 if unisensory_loc
     xrange_V(1,:) = xrange;
     xrange_A(1,:) = xrange;
-     sA(:,1) = xrange;
-     sV(:,1) = xrange;
+    sA(:,1) = xrange;
+    sV(:,1) = xrange;
 else
-    %for multisensory trials response distributions are 2 dimensional
-    %(joint A and V saccades)
-    %final matrix would be (condition)x(xa)x(xv)x(sa)x(sv) dimensions, which
-    %is why these variables are being set up in this way. Eventually
-    %decided to split the integrals to keep the number of elements down for
-    %integration.
-%     sA(1,1,1,:) = xrange;
-%     sV(1,1,1,:) = xrange;
+    %for subsequent steps, format will always be
+    %(conditions)x(xv)x(xa)x(pdf) for the pdf matrices.
     xrange_A(1,1,:) = xrange;
     xrange_V(1,:,1) = xrange;
+    sA(1,1,1,:) = xrange; %ideally I would use different dimensions for this, but the matrices become too large
+    sV(1,1,1,:) = xrange;
+
 end
 
 %% (1) get sensory likelihood for visual and auditory p(xa|sa)
-if prior_type ~= 1
+% if prior_type ~= 1
     %normal prior makes this step irrelevant 
     likelihood_sA = bsxfun_normpdf(xrange_A,sA,A_sig);
     likelihood_sV = bsxfun_normpdf(xrange_V,sV,V_sig);
-end
+% end
 %% (2) get sensory priors 
-if prior_type ~= 1 %naive normal prior is handled analytically in subsequent steps
-    if unisensory_loc
-        if prior_type == 2
-            locations = [-24 -18 -12 -6 6 12 18 24]; %use actual target locations
-        else
-            locations = [prior_mu,-prior_mu]; %symmetric around 0
-        end
-        prior_sA = get_unisensory_prior(prior_type,xrange,locations,prior_sig);
-        prior_sV = get_unisensory_prior(prior_type,xrange,locations,prior_sig);
-    else
-        %JM todo
-        prior_c1 = get_joint_prior();
-        prior_c2 = get_joint_prior();
-    end
-    
+% if prior_type ~= 1 %naive normal prior is handled analytically in subsequent steps
+switch prior_type
+    case 1
+        locations = 0;
+    case 2
+        locations = [-24 -18 -12 -6 6 12 18 24]; %use actual target locations
+    case 3
+        locations = [abs(prior_mu),-abs(prior_mu)]; %symmetric around 0
 end
+prior = get_unisensory_prior(prior_type,xrange,locations,prior_sig);
+% end
 
 %% (3) find the posterior distribution for C = 1 case for all values of xa and xv;
 
 switch CI_type 
     case 1 % bayesian causal inference posterior
-        if prior_type == 1
+        % todo if prior_type == 1
             %c1 post is analytically solvable when prior is normal
-            c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common);
-        else
+            c1post = get_c1post(xrange_A,xrange_V,0,A_sig,V_sig,prior_sig,p_common); %switched prior mu with 0 here (3rd param) because I'm being lazy, will remove once I add the new CI priors.
+        %else
             %for all cases with non-normal priors, need to use integration
             %JM todo
            
-        end
+        %end
 end
 
 %% (4) get posterior p(sA,sV|xa,xv,C) if estimating location
@@ -162,51 +155,69 @@ if location_estimate
     if prior_type == 1
         %analytic solutions available for both of these cases, assuming a
         %normal prior
-        int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %int pdf = 1x(xA)x(xV)x(eval_range) array. so for a given value of xA and xv, pdf is in 4th dim
-        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
+        int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu1,A_sig,V_sig,prior_sig,xrange); %int pdf = 1x(xA)x(xV)x(eval_range) array. so for a given value of xA and xv, pdf is in 4th dim
+        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu1,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
+        %rescale to get around edge effects
+               % V_seg_pdf = bsxfun(@rdivide,V_seg_pdf,bsxfun(@rdivide,sum(V_seg_pdf,4),sum(likelihood_sV,4)));
     else
-        %JM todo
+        %c1 case
+        int_pdf = bsxfun(@times,bsxfun(@times,likelihood_sV,likelihood_sA),prior);
+        int_pdf = bsxfun(@rdivide,int_pdf,sum(int_pdf,4));        %normalize so that sums to 1
+        %c2 case
+        A_seg_pdf = bsxfun(@times,likelihood_sA, prior);
+        A_seg_pdf = bsxfun(@rdivide,A_seg_pdf,bsxfun(@rdivide,sum(A_seg_pdf,4),sum(likelihood_sA,4)*sum(prior))); %can't just divide by this, because edges end up getting scaled too much
+        V_seg_pdf = bsxfun(@times,likelihood_sV, prior);
+        V_seg_pdf = bsxfun(@rdivide,V_seg_pdf,bsxfun(@rdivide,sum(V_seg_pdf,4),sum(likelihood_sV,4)*sum(prior)));
     end
 
 end
 
 if unisensory_loc
     if prior_type == 1
-        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
+        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu1,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
         post_sA = A_seg_pdf;
         post_sV = V_seg_pdf;
     else
-       post_sA =likelihood_sA.*prior_sA';
+       post_sA =likelihood_sA.*prior';
        post_sA = post_sA./(1/sum(post_sA,'all')); 
-       post_sV =likelihood_sV.*prior_sV';
+       post_sV =likelihood_sV.*prior';
        post_sV = post_sV./(1/sum(post_sV,'all')); 
     end  
 end
 %% (5) Incorporate decision rule
-if location_estimate
+if location_estimate %todo, add 1 vs 2 saccade lapse probability in to this decision rule
     switch combination_rule
         case 1 %if bayesian reweighting
-            AV_c1_pdf = bsxfun(@times,c1post, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.
-            V_c2_pdf = bsxfun(@times,(1-c1post),V_seg_pdf); %make sure to multiply the correct dimensions
-            A_c2_pdf = bsxfun(@times,(1-c1post), A_seg_pdf);
+            %reweight by posterior
+            %factor in possibility of randomly making 1 saccade instead of
+            %two
+            if incorporate_unity_lapse
+                w_unity = c1post*(1-lambda_uni) + lambda_uni/2; %there is the possibility of making a mistake about number of saccades, that will propogate to the location report
+            else
+                w_unity = c1post;
+            end
         case 2 %if model selection, choose the best model and use that one exclusively (set weight on alternative to 0)
-            w1_unity = zeros(size(c1post));
-            w1_unity(c1post > 0.5) = 1;
-            AV_c1_pdf = bsxfun(@times,w1_unity, int_pdf);
-            V_c2_pdf = bsxfun(@times,(1-w1_unity), V_seg_pdf);
-            A_c2_pdf = bsxfun(@times,(1-w1_unity), A_seg_pdf);
+            w_unity = zeros(size(c1post));
+            w_unity(c1post > 0.5) = 1;
+%             AV_c1_pdf = bsxfun(@times,w1_unity, int_pdf);
+%             V_c2_pdf = bsxfun(@times,(1-w1_unity), V_seg_pdf);
+%             A_c2_pdf = bsxfun(@times,(1-w1_unity), A_seg_pdf);
         case 3 % probabilistic fusion, reweighting (covers possibility of always integrate/always segregate)
-            fixed_weights = repmat(p_common,1,length(xrange),length(xrange)); %weights are fixed at the prior probability of one cause trials (fit to data) %JM might make this free parameter
-            AV_c1_pdf = bsxfun(@times,fixed_weights, int_pdf);
-            V_c2_pdf = bsxfun(@times,(1-fixed_weights), V_seg_pdf);
-            A_c2_pdf = bsxfun(@times,(1-fixed_weights), A_seg_pdf);
+            w_unity = repmat(p_common,1,length(xrange),length(xrange)); %weights are fixed at the prior probability of one cause trials (fit to data) %JM might make this free parameter
+%             AV_c1_pdf = bsxfun(@times,fixed_weights, int_pdf);
+%             V_c2_pdf = bsxfun(@times,(1-fixed_weights), V_seg_pdf);
+%             A_c2_pdf = bsxfun(@times,(1-fixed_weights), A_seg_pdf);
         case 4 % probability matching
             %todo
     end
+    AV_c1_pdf = bsxfun(@times,w_unity, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.
+    V_c2_pdf = bsxfun(@times,(1-w_unity),V_seg_pdf);
+    A_c2_pdf = bsxfun(@times,(1-w_unity), A_seg_pdf);
     %include chance for random choice in saccade
-    resp_A_c2 = lambda_loc/length(xrange) + (1-lambda_loc)*(A_c2_pdf);
-    resp_V_c2 = lambda_loc/length(xrange) + (1-lambda_loc)*(V_c2_pdf);
-    resp_AV_c1 = lambda_loc/length(xrange) + (1-lambda_loc)*AV_c1_pdf; 
+    resp_A_c2 = lambda_loc/numel(A_c2_pdf) + (1-lambda_loc)*(A_c2_pdf);
+    resp_V_c2 = lambda_loc/numel(V_c2_pdf) + (1-lambda_loc)*(V_c2_pdf);
+    resp_AV_c1 = lambda_loc/numel(AV_c1_pdf) + (1-lambda_loc)*AV_c1_pdf;   
+    
 end
 
 if unity_judge
@@ -280,13 +291,13 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_AV_c2 = bsxfun(@times,prmat_A_shape,prmat_V_shape);%problem here is normalizing to make the probabilities match, because this is going to significantly reduce them
     %renormalize so that total probability will sum to 1 for each condition
     %after adding c=1 case
-    prmat_AV_c2 = bsxfun(@rdivide,prmat_AV_c2,sum(prmat_A_c2,4));
+    prmat_AV_c2 = bsxfun(@rdivide,prmat_AV_c2,sum(prmat_V_c2,4));
     
     %diagonalize 
     diag_array = diag(ones(length(xrange),1));
     diag_array = logical(diag_array);
     prmat_sac = prmat_AV_c2;
-    %add C=1 case to diagonal, producing final cxSxS matrix
+    %add C=1 case to diagonal, producing final cxSvxSa matrix
     prmat_sac(:,diag_array) = squeeze(prmat_AV_c1(:,1,1,:));
 end
 %% (7) calculate negative log likelihood of data under this posterior

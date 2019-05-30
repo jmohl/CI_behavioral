@@ -92,10 +92,10 @@ function [UBND,LBND] = get_ini_params(model)
 UBND = [6 15 40 .9 .25];
 LBND = [.5 1 5 .1 0];
 
-if model(3) > 1
-    UBND = [UBND,.1];
-    LBND = [LBND,0];
-end
+% if model(3) > 1 %getting rid of lapse saccades I think
+%     UBND = [UBND,.1];
+%     LBND = [LBND,0];
+% end
 if model(4) == 3 
     UBND = [UBND,24];
     LBND = [LBND,0];

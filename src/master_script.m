@@ -26,10 +26,10 @@ subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 % model(1) = CI type: Bayes (1) or probabilistic fusion (2)
 % model(2) = stimulus fusion: Bayes reweight(1), model selection(2), probabilistic fusion (3)
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
-% model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture impirical (4)
+% model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (4)
 
 % load example day, for testing
-subject_list = {'Juno'};%, 'Juno_right','Yoko_left','Yoko_right'};%,'Juno','Yoko'};%, 'Yoko'};
+subject_list = {'Yoko'};%, 'Juno_right','Yoko_left','Yoko_right'};%,'Juno','Yoko'};%, 'Yoko'};
 model_list = {[1 1 2 1]}; %testing unisensory localization under same framework.
 %setting fitting procedure options
 global fitoptions MAXRNG

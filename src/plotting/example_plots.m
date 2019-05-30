@@ -99,7 +99,7 @@ for ic = ex_conds
     xlabel('Auditory Location')
     ylabel('Visual Location')
     title(sprintf('%d Aud, %d Vis pair', m.conditions{model_ind}(ic,:)))
-    saveas(gcf,sprintf('%s\\%s%dA%dV_resp',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
+%     saveas(gcf,sprintf('%s\\%s%dA%dV_resp',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
 end
 %% plot 2: unity judgement plots, average across subjects/days
 
@@ -176,9 +176,10 @@ for data_ind = 1:3
     
 end
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
+subjects = {'Yoko'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
 model = [1 1 2 1];
+
 for si = 1:length(subjects)
     subject = subjects{si};
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
@@ -238,12 +239,12 @@ for si = 1:length(subjects)
     saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
 end
 %% plot 3, take 2, plotting every pair from one side.
-subject = 'Juno_left';
+subject = 'Yoko';
 A_tars = [-24 -6];
 V_tars = [-24 -18 -12 -6];
-%A_tars = A_tars * -1; V_tars = V_tars * -1;
+A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
-model = [1 1 3];
+model = [1 1 2 1];
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 

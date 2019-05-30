@@ -32,6 +32,15 @@ for i = 1:size(models,1)
         case 3
             model_str = strcat(model_str,'_J'); %joint fit
     end
+    switch models(i,4)  %prior
+        case 1
+            model_str = strcat(model_str,'_N'); %naive/normal
+        case 2
+            model_str = strcat(model_str,'_D'); %discrete
+        case 3
+            model_str = strcat(model_str,'_M'); %mixture prior
+    end
+    
     model_names{i} = model_str;
 end
     
