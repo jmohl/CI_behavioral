@@ -24,8 +24,8 @@ switch prior_type
         prior(ismember(xrange,locations)) = 1/length(locations);
     case 3 %mixture of gaussians prior
         prior = zeros(size(xrange));
-        for loc = locations
-            prior = prior+normpdf(xrange,loc,sigma)/length(locations);
+        for loc = 1:length(locations)
+            prior = prior+normpdf(xrange,locations(loc),sigma(loc))/length(locations);
         end             
 end 
 prior = prior/sum(prior,'all'); %normalize so that prior sums to 1, to deal with potentially over-broad priors (should treat them as uniform over range at the limit)

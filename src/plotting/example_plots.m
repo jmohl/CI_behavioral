@@ -22,8 +22,8 @@ try
 end
 
 %% Model and subject to plot
-subject = 'Yoko_right';
-model = [1 1 2];
+subject = 'H08';
+model = [1 1 3 1];
 
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
@@ -41,7 +41,7 @@ end
 
 figure
 plot_unity(conditions,responses,fit_dist);
-title(sprintf('percent trials reported unity by target separation \n %s model %d%d%d',subject, model))
+title(sprintf('percent trials reported unity by target separation \n %s model %d%d%d%d',subject, model))
 
     saveas(gcf,sprintf('%s\\%s_unity_combined',figpath,subject),'png');
 %% plot jp2: location as distance between A and V saccades for each condition grouped by target sep in the same way.
@@ -176,9 +176,9 @@ for data_ind = 1:3
     
 end
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subjects = {'Yoko'};%,'Yoko','H05','H03','H08'};
+subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
-model = [1 1 2 1];
+model = [1 1 3 3];
 
 for si = 1:length(subjects)
     subject = subjects{si};
@@ -239,12 +239,12 @@ for si = 1:length(subjects)
     saveas(gcf,sprintf('%s\\locex_%s_combined_%s',figpath,subject,string(get_model_names(model))),'png');
 end
 %% plot 3, take 2, plotting every pair from one side.
-subject = 'Yoko';
+subject = 'Juno';
 A_tars = [-24 -6];
 V_tars = [-24 -18 -12 -6];
 A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
-model = [1 1 2 1];
+model = [1 1 3 3];
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 
@@ -301,12 +301,12 @@ for V_tar = V_tars
 end
 saveas(gcf,sprintf('%s\\locex_%s_left_%s',figpath,subject,string(get_model_names(model))),'png');
 %% plot 4, splitting up to compare fits in each dimension
-subject = 'Yoko_right';
+subject = 'Yoko';
 A_tars = [-24 -6];
 V_tars = [-24 -18 -12 -6];
 A_tars = A_tars * -1; V_tars = V_tars * -1;
 % set desired model and range
-model = [1 1 3];
+model = [1 1 3 3];
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 

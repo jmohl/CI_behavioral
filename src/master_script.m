@@ -18,8 +18,6 @@ addpath('data','src','src\lautils', 'src\plotting');
 
 subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
-% set models to be run
-
 %% Select models to run
 
 % model values
@@ -29,11 +27,10 @@ subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (4)
 
 % load example day, for testing
-subject_list = {'Yoko'};%, 'Juno_right','Yoko_left','Yoko_right'};%,'Juno','Yoko'};%, 'Yoko'};
-model_list = {[1 1 2 1]}; %testing unisensory localization under same framework.
+model_list = {[1 1 3 3];[1 1 3 1]};
 %setting fitting procedure options
 global fitoptions MAXRNG
-MAXRNG = 50.5;
+MAXRNG = 50;
 fitoptions.binsize = 1; %size of bins used for responses, in degrees.
 fitoptions.load_saved_fits = 0; %load saved fits, if they exist
 fitoptions.make_plots = 0;

@@ -86,8 +86,9 @@ function [UBND,LBND] = get_ini_params(model)
 % theta(4) = p_common, prior probability of common cause
 % theta(5) = lapse probability on unity judgement
 % Optional thetas
-% theta(6) = lapse probability, localization (random saccade location)
-% theta(7) = prior mu (when using mixture of normals prior)
+% theta(6) = prior_mu, for when using a mixture of normals prior
+% theta(7) prior_mu2
+% theta(8) prior_sig2
 
 UBND = [6 15 40 .9 .25];
 LBND = [.5 1 5 .1 0];
@@ -97,8 +98,8 @@ LBND = [.5 1 5 .1 0];
 %     LBND = [LBND,0];
 % end
 if model(4) == 3 
-    UBND = [UBND,24];
-    LBND = [LBND,0];
+    UBND = [UBND,24,24,30];
+    LBND = [LBND,-24,-24,0];
 end
 
 end

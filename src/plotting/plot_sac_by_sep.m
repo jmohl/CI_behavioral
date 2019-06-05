@@ -23,12 +23,12 @@ function plot_sac_by_sep(conditions,responses,fit_dist)
 % two saccades is the difference between the A and V index, and you need to
 % count up saccades along these non-diagonal diagonals.
 
-delta_counts = zeros(size(conditions,1),100);
-fit_counts = zeros(size(conditions,1),100);
+delta_counts = zeros(size(conditions,1),101);
+fit_counts = zeros(size(conditions,1),101);
 for ic = 1:size(conditions,1) %condition number
-    for delta = 0:99
-        include_array = zeros(100,100);
-        for k=1:100-delta
+    for delta = 0:100
+        include_array = zeros(101,101);
+        for k=1:101-delta
             j=k+delta;
             include_array(j,k) = 1;
         end
@@ -41,8 +41,8 @@ end
 deltaAV = abs(conditions(:,1)-conditions(:,2));
 
 %convert delta counts to mean AV sep
-all_sep = sum(delta_counts .* [0:99],2); %summing here because I have already normalized to probability
-all_fit = sum(fit_counts .* [0:99],2);
+all_sep = sum(delta_counts .* [0:100],2); %summing here because I have already normalized to probability
+all_fit = sum(fit_counts .* [0:100],2);
 
 [gav,gav_labs] = findgroups(deltaAV);
 mean_sep = splitapply(@mean,all_sep,gav);
