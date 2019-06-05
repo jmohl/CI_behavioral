@@ -28,7 +28,8 @@
 % theta(4) = p_common, prior probability of common cause
 % theta(5) = lapse probability on unity judgement
 % Optional thetas
-% theta(6) = prior mu (when using mixture of normals prior)
+% theta(6) = prior_mu2 (when using mixture of normals prior)
+% theta(6) = prior_sig2 (when using mixture of normals prior)
 
 % model: definition of model used
 % model(1) = CI type: Bayes (1) or probabilistic fusion (2)
@@ -82,9 +83,8 @@ prior_mu = 0;
 
 %optional parameters
 if prior_type == 3 %if mixture prior used
-    prior_mu = theta(6);
-    prior_mu2 = theta(7);
-    prior_sig2 = theta(8);
+    prior_mu2 = theta(6);
+    prior_sig2 = theta(7);
 end
 
 if unisensory_loc
@@ -142,8 +142,8 @@ if prior_type ~= 1 %naive normal prior is handled analytically in subsequent ste
         case 2
             locations = [-24 -18 -12 -6 6 12 18 24]; %use actual target locations
         case 3
-            locations = [prior_mu,prior_mu2];
-            prior_sig = [prior_sig,prior_sig2];%symmetric around 0
+            locations = [prior_mu2,prior_mu,-prior_mu2];%symmetric around 0
+            prior_sig = [prior_sig2,prior_sig,prior_sig2];
     end
     prior = get_unisensory_prior(prior_type,xrange,locations,prior_sig);
 end
@@ -168,12 +168,14 @@ if location_estimate
         [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
     else
         %c1 case
-        int_pdf = bsxfun(@times,bsxfun(@times,likelihood_xV,likelihood_xA),prior);
+        %prior needs to go in the 4th dimensio
+        rs_prior(1,1,1,:) = prior; 
+        int_pdf = bsxfun(@times,bsxfun(@times,likelihood_xV,likelihood_xA),rs_prior);
         int_pdf = bsxfun(@rdivide,int_pdf,sum(int_pdf,4)); %can't do it this way because it ruins things at the edges. TODO fix this
         %c2 case
-        A_seg_pdf = bsxfun(@times,likelihood_xA, prior);
+        A_seg_pdf = bsxfun(@times,likelihood_xA, rs_prior);
         A_seg_pdf = bsxfun(@rdivide,A_seg_pdf,bsxfun(@rdivide,sum(A_seg_pdf,4),sum(likelihood_xA,4)*sum(prior)));
-        V_seg_pdf = bsxfun(@times,likelihood_xV, prior);
+        V_seg_pdf = bsxfun(@times,likelihood_xV, rs_prior);
         V_seg_pdf = bsxfun(@rdivide,V_seg_pdf,bsxfun(@rdivide,sum(V_seg_pdf,4),sum(likelihood_xV,4)*sum(prior)));
     end
 
@@ -185,6 +187,7 @@ if unisensory_loc
         post_sA = A_seg_pdf;
         post_sV = V_seg_pdf;
     else
+        %prior needs to go in first dimension
        post_sA =likelihood_xA.*prior';
        post_sA = post_sA./(1/sum(post_sA,'all')); 
        post_sV =likelihood_xV.*prior';

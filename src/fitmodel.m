@@ -98,8 +98,8 @@ LBND = [.5 1 5 .1 0];
 %     LBND = [LBND,0];
 % end
 if model(4) == 3 
-    UBND = [UBND,24,24,30];
-    LBND = [LBND,-24,-24,0];
+    UBND = [UBND,15,15];%,15,25];
+    LBND = [LBND,-15,5];%,-15,5];
 end
 
 end
