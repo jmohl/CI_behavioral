@@ -31,7 +31,7 @@ model_list = {[0 0 4 1];[0 0 4 3];[1 0 1 1];[1 0 1 3];[2 0 1 1]; [1 1 2 1];[1 1 
 global fitoptions MAXRNG
 MAXRNG = 50;
 fitoptions.binsize = 1; %size of bins used for responses, in degrees.
-fitoptions.load_saved_fits = 0; %load saved fits, if they exist
+fitoptions.load_saved_fits = 1; %load saved fits, if they exist
 fitoptions.make_plots = 0;
 fitoptions.n_iterations = 1; %set option to repeat fminsearch for n times
 fitoptions.parameter_names = {'A_sig','V_sig','prior_sig','p_common','lambda_uni','lambda_loc','prior_mu'};

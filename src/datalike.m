@@ -74,8 +74,8 @@ prior_type = model(4);
 
 %give fit parameters sensible names
 %minimum parameter set
-V_sig = theta(1);%vis target sigma
-A_sig = theta(2);%close aud target sigma
+A_sig = theta(1);%close aud target sigma
+V_sig = theta(2);%vis target sigma
 prior_sig = theta(3);%sigma of centrality prior
 p_common = theta(4);%prior on common cause
 lambda_uni = theta(5); %lapse probability
@@ -183,7 +183,7 @@ end
 
 if unisensory_loc
     if prior_type == 1
-        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu1,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
+        [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
         post_sA = A_seg_pdf;
         post_sV = V_seg_pdf;
     else
