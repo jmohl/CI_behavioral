@@ -51,7 +51,9 @@ if ~exist('results\modelfits', 'dir')
     mkdir('results\modelfits')
 end
 
-
+%% testing subset
+model_list = {[1 1 3 1];[1 1 3 2];[1 1 3 3]};
+subject_list = {'Juno','Yoko','H08'};
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};

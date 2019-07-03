@@ -18,6 +18,8 @@ function run_subject(subject,raw_data,model_list)
 global fitoptions
 
 %% Clean data
+% run stringent single saccade filter TESTING
+raw_data = strict_single_filter(raw_data);
 %get valid data only
 valid_data = raw_data(logical(raw_data.valid_tr),:);
 
