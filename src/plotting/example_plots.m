@@ -22,7 +22,7 @@ try
 end
 
 %% Model and subject to plot
-subject = 'H08';
+subject = 'Yoko';
 model = [1 1 3 1];
 
 m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
@@ -176,9 +176,9 @@ for data_ind = 1:3
     
 end
 %% plot 3: localization plots + models, rescaled and sized for nice figures, separate individuals
-subjects = {'Juno'};%,'Yoko','H05','H03','H08'};
+subjects = {'Yoko'};%,'Yoko','H05','H03','H08'};
 % set desired model and range
-model = [1 1 3 3];
+model = [1 1 3 1];
 
 for si = 1:length(subjects)
     subject = subjects{si};

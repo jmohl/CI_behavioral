@@ -33,7 +33,7 @@ m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
 m=m.m;
 
 model = [1 1 3 1];
-demo_conds = [1,2];
+demo_conds = [3,4];
 
 locations = m.fitoptions.eval_midpoints;
 model_ind = ismember(vertcat(m.models{:}),model,'rows');

@@ -22,8 +22,8 @@
 
 % Theta: parameters used for model
 % Included in all models:
-% theta(1) = Visual sigma
-% theta(2) = auditory sigma
+% theta(1) = aud sigma
+% theta(2) = vis sigma
 % theta(3) = prior sigma, variance of prior (not used in discrete prior case)
 % theta(4) = p_common, prior probability of common cause
 % theta(5) = lapse probability on unity judgement
