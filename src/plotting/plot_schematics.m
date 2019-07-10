@@ -6,55 +6,50 @@
 % -------------------
 %
 % Description: Making schematic illustrations for comparison with data.
-% plot1 demonstrate CI using probability distributions
-% plot2 should be illustration of unity judgement under different
-% possibilities
-% plot3 should be illustration of localization plot under CI and non-CI
-% models
+% I decided to make these plots by making the same PDFs I use in the model
+% fitting process and making the plots out of those. This has the advantage
+% of being a true reflection of what my code does, but there is kindof a
+% disadvantage in that everything is binned and so the schematics are not
+% going to have exact values. But I don't think that matters. It's also a
+% little slow because it runs several integrations but I don't think that
+% matters either.
 
-%% plot 1: demonstration distributions for localization of vis and aud tars
-figure
-%options
-A_sig = 7;
-V_sig = 4;
-A_tar = 10;
-V_tar = -10;
-bin_size = .1;
-xrange = -50:bin_size:50;
-%make pdfs
-A_pdf = normpdf(xrange,A_tar,A_sig);
-V_pdf = normpdf(xrange,V_tar,V_sig);
-AV_pdf = A_pdf .* V_pdf; %optimal integration assuming normal dists and no prior
-AV_pdf = AV_pdf ./ (sum(AV_pdf)*bin_size); %normalize to sum to 1.
-%make plot
-plot(xrange,A_pdf,'linewidth',2,'color','r');
-hold on
-plot(xrange,V_pdf,'linewidth',2,'color','b');
-plot(xrange,AV_pdf,'linewidth',2,'color','k');
-legend('Auditory', 'Visual', 'Integrated');
-xlabel('Sensory parameter (location)');
-ylabel('Probability');
+%plot 1: pdfs for example conditions. Currently pdfs are normalized for
+%comparison purposes and the single saccade trials (diagonal) are
+%subtracted from the double saccade trials. You can remove this subtraction
+%piece and end up with the kind of multi-modal distribution that is
+%representative of paradigms which dont share this dual report scheme.
 
-% now make that plot, but show different lines for what would be expected
-% under causal inference, i.e. different lines for segregated, integrated 
+%plot 2: show unimodal and integrated bias, collapsing across conditions
+%and plotting by target separation. This is the best way I've come up with
+%so far to show the effects on localization in a single plot.
 
-%% plot 1 again, but this time using the code I've written for the actual model
+%plot 3: unity judgement by target sep. This plot probably won't make the
+%paper because it conveys very little info but might be useful for
+%demonstration purposes.
 
-%options
+%% options
+clear;close all;
 A_sig = 5;
 V_sig = 3;
-A_tar = [6;12];
-V_tar = [-6;-12];
-bin_size = .5;
+A_tar = [-15;-12;-9;-6;-3;0;3;6;9;12;15];
+V_tar = [15;12;9;6;3;0;-3;-6;-9;-12;-15];
+bin_size = .25;
 prior_mu = 0;
-prior_sig =20;
-p_common = .8;
+prior_sig =200; %easier to just make this very large rather than take out of code
+p_common = .5;
 xrange = -50:bin_size:50;
+set(0, 'DefaultLineLineWidth', 2);
+set(0, 'DefaultLineMarkerSize', 20);
+set(0,'DefaultFigurePosition',[25,50,800,800])
+
+
+%% Generate pdfs
 xrange_A(1,1,:) = xrange;
 xrange_V(1,:,1) = xrange;
 
 %all of this is just taken from the datalike code, might be simpler to just
-%run it once and get the output that way, but it expects data. 
+%run it once and get the output that way, but it expects data.
 c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common); %switched prior mu with 0 here (3rd param) because I'm being lazy, will remove once I add the new CI priors.
 int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
 [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
@@ -86,48 +81,113 @@ prmat_sac = prmat_AV_c2;
 %add C=1 case to diagonal, producing final cxSvxSa matrix
 prmat_sac(:,diag_array) = prmat_sac(:,diag_array) + squeeze(prmat_AV_c1(:,1,1,:));
 
-%sum over A or V locs, to get A or V pdf in 2d
-figure
- set(gcf,'Position',[25,100,1600,500])
-for plot_pair = [1,2]
-    subplot(1,2,plot_pair);
-    hold on
-
-cA = squeeze(sum(prmat_sac(plot_pair,:,:),2));
-cV = squeeze(sum(prmat_sac(plot_pair,:,:),3));
-cAV = squeeze(prmat_sac(plot_pair,diag_array));
-%if want to plot single saccades separately, then include this
-% cA = cA' - cAV;
-% cV = cV - cAV;
-%normalize all pdfs to 1, this eliminates the ratio but makes it easier to
-%compare variance and mean of all
-cA = cA/sum(cA);
-cV=cV/sum(cV);
-cAV = cAV/sum(cAV);
-
-plot(xrange,cA,'r')
-plot(xrange,cV,'b')
-% plot(xrange,cAV,'k')
-
-[mv_V,mi_V]= max(cV);
-[mv_A,mi_A]= max(cA);
-
 % get fully segregated estimates
 prmat_A_seg = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), A_seg_pdf), 2), 3);
 prmat_V_seg = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), V_seg_pdf), 2), 3);
 
-cA_seg= squeeze(prmat_A_seg(plot_pair,:,:,:));
-cV_seg= squeeze(prmat_V_seg(plot_pair,:,:,:));
-cA_seg=cA_seg/sum(cA_seg);
-cV_seg=cV_seg/sum(cV_seg);
 
-plot(xrange,cA_seg,'r--')
-plot(xrange,cV_seg,'b--')
-title(sprintf('%d aud, %d vis',A_tar(plot_pair),V_tar(plot_pair)));
-ylabel('Probability')
-xlabel('Stimulus feature (location)')
-legend('Auditory CI','Visual CI','Integrated','Auditory unimodal','Visual Unimodal')
+%% schematic 1, showing pdfs for 2 conditions (including bias)
+figure
+set(gcf,'Position',[25,100,1600,500])
+plot_ind = 1;
+for plot_pair = [8,10]
+    subplot(1,2,plot_ind);
+    hold on
+    cA = squeeze(sum(prmat_sac(plot_pair,:,:),2));
+    cV = squeeze(sum(prmat_sac(plot_pair,:,:),3));
+    cAV = squeeze(prmat_sac(plot_pair,diag_array));
+    %if want to plot single saccades separately, then include this
+    cA = cA' - cAV;
+    cV = cV - cAV;
+    %normalize all pdfs to 1, this eliminates the ratio but makes it easier to
+    %compare variance and mean of all
+    cA = cA/sum(cA);
+    cV=cV/sum(cV);
+    cAV = cAV/sum(cAV);
+    
+    plot(xrange,cA,'r')
+    plot(xrange,cV,'b')
+    plot(xrange,cAV,'k')
+    
+    cA_seg= squeeze(prmat_A_seg(plot_pair,:,:,:));
+    cV_seg= squeeze(prmat_V_seg(plot_pair,:,:,:));
+    cA_seg=cA_seg/sum(cA_seg);
+    cV_seg=cV_seg/sum(cV_seg);
+    
+    plot(xrange,cA_seg,'r--')
+    plot(xrange,cV_seg,'b--')
+    title(sprintf('%d aud, %d vis',A_tar(plot_pair),V_tar(plot_pair)));
+    ylabel('Probability')
+    xlabel('Stimulus feature (location)')
+    legend('Auditory CI','Visual CI','Integrated','Auditory unimodal','Visual Unimodal')
+    plot_ind = plot_ind+1;
 end
+
+
+%% schematic 2, format for collapsing across target conditions, showing only the mean of the distributions.
+% there are two ways to do this. One is I can estimate the mean using the
+% pdfs, but this does not really actually get the mean. The other is to
+% calculate the means of the distributions, but this doesn't really work
+% for the synthetic plots I'm making right now, because they dont have any
+% data obviously.
+
+% this also brings up a problem I'm going to have with the actual plots.
+% Plotting the mean bias for various conditions doesn't really get at the
+% heart of the issue, because the distributions are not normal. That's like
+% kindof the point. Except that once you split the single and double
+% saccade distributions this is much less of a problem, so it's probably
+% fine.
+cA = squeeze(sum(prmat_sac(:,:,:),2));
+cV = squeeze(sum(prmat_sac(:,:,:),3));
+cAV = squeeze(prmat_sac(:,diag_array));
+cA_seg= squeeze(prmat_A_seg(:,:,:,:));
+cV_seg= squeeze(prmat_V_seg(:,:,:,:));
+%separate single and dual saccades
+cA = cA - cAV;
+cV = cV - cAV;
+
+%interpolation code, slightly more accurate than using the max
+respV = sum(cV.*xrange,2)./sum(cV,2);
+respA = sum(cA.*xrange,2)./sum(cA,2);
+respAV = sum(cAV.*xrange,2)./sum(cAV,2);
+respA_seg = sum(cA_seg.*xrange,2)./sum(cA_seg,2);
+
+
+AV_dif = A_tar - V_tar;
+A_bias = respA - A_tar;
+V_bias = respV - V_tar ;
+AV_bias_A = respAV - A_tar;
+AV_bias_V = respAV - V_tar ;
+A_bias_seg = respA_seg -  A_tar;
+
+figure
+plot(AV_dif,A_bias,'.r-')
+hold on
+plot(AV_dif,V_bias,'.b-')
+plot(AV_dif,AV_bias_A,'.k-')
+%plot(AV_dif,AV_bias_V,'.k-')
+plot(AV_dif,A_bias_seg,'.g--')
+xlabel({'\Delta AV (A - V)';'<<<< A target to left of V | A target to right of V >>>>'})
+ylabel({'Bias from target location';'(resp - target)'})
+legend('A','V','AV relative to A tar','A and V, no interaction','location', 'best')
+title('Response bias vs target separation')
+
+%% schematic 3, unity judgement case
+%this one is the most intuitive and therefore probably doesn't need and
+%explanation as much. Still It will be good to have for a conversation with
+%jenni so I can kindof lay out my ideas for the paper.
+
+%the other thing that is a little annoying about this figure is that there
+%really isn't much to it, and the difference between the models are super
+%subtle with respect to this one (except the null model) so I can't even
+%really use it to explain much. So probably won't include but whatever.
+
+figure
+prmat_unity = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), c1post), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
+plot(AV_dif, prmat_unity,'k.-')
+title('Percent report unity vs target separation')
+xlabel('\Delta AV (A - V)')
+ylabel('Percent report unity')
 
 
 
