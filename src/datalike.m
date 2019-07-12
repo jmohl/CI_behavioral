@@ -40,7 +40,7 @@
 % eval_midpoint: evaluation points for numerical methods. Must match with
 % saccade bins.
 
-%% start of likelihood code - currently only working for unity judgement
+%% start of likelihood code
 function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 %set up options 
 debug = 0;
@@ -213,7 +213,7 @@ if location_estimate
             end
         case 3 % probabilistic fusion, reweighting (covers possibility of always integrate/always segregate)
             w_unity = repmat(p_common,1,length(xrange),length(xrange)); %weights are fixed at the prior probability of one cause trials (fit to data) %JM might make this free parameter
-        case 4 % probability matching
+        case 4 % probability matching 0 - not actually sure if this is differentiable from reweighting with how I've done the task,
             %todo
     end
     AV_c1_pdf = bsxfun(@times,w_unity, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.

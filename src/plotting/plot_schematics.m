@@ -27,9 +27,18 @@
 %plot 3: unity judgement by target sep. This plot probably won't make the
 %paper because it conveys very little info but might be useful for
 %demonstration purposes.
+clear;close all;
+
+local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
+cd(local_directory)
+addpath('src', 'src\plotting','results','data');
+figpath = 'results\figures\schematics';
+try
+    mkdir(figpath)
+end
 
 %% options
-clear;close all;
+combination_rule = 1; %1 = bayes reweight, 2 = model selection 
 A_sig = 5;
 V_sig = 3;
 A_tar = [-15;-12;-9;-6;-3;0;3;6;9;12;15];
@@ -39,6 +48,8 @@ prior_mu = 0;
 prior_sig =200; %easier to just make this very large rather than take out of code
 p_common = .5;
 xrange = -50:bin_size:50;
+
+
 set(0, 'DefaultLineLineWidth', 2);
 set(0, 'DefaultLineMarkerSize', 20);
 set(0,'DefaultFigurePosition',[25,50,800,800])
@@ -54,9 +65,19 @@ c1post = get_c1post(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,p_common); 
 int_pdf = get_integrate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange);
 [~,A_seg_pdf,V_seg_pdf] = get_segregate_pdf(xrange_A,xrange_V,prior_mu,A_sig,V_sig,prior_sig,xrange); %seg pdf is 1x1x(xA)x(eval_range) array, so pdf is in 4th dimension for a given value of xA
 
-AV_c1_pdf = bsxfun(@times,c1post, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.
-V_c2_pdf = bsxfun(@times,(1-c1post),V_seg_pdf);
-A_c2_pdf = bsxfun(@times,(1-c1post), A_seg_pdf);
+%choose weighting of pdfs based on CI strategy, reweighting or model
+%selection
+switch combination_rule
+    case 1
+        w_unity = c1post;
+    case 2
+        w_unity = zeros(size(c1post));
+        w_unity(c1post > 0.5) = 1;
+end
+
+AV_c1_pdf = bsxfun(@times,w_unity, int_pdf) ;
+V_c2_pdf = bsxfun(@times,(1-w_unity),V_seg_pdf);
+A_c2_pdf = bsxfun(@times,(1-w_unity), A_seg_pdf);
 
 xpdf_V = bsxfun_normpdf(xrange_V, V_tar,V_sig);
 xpdf_V = bsxfun(@rdivide, xpdf_V, qtrapz(xpdf_V, 2)); % Not multiplying by volume element, this doesn't matter if the grid volumn = 1
@@ -122,8 +143,7 @@ for plot_pair = [8,10]
     legend('Auditory CI','Visual CI','Integrated','Auditory unimodal','Visual Unimodal')
     plot_ind = plot_ind+1;
 end
-
-
+% saveas(gcf,sprintf('%s\\ex_pdfs',figpath),'png');
 %% schematic 2, format for collapsing across target conditions, showing only the mean of the distributions.
 % there are two ways to do this. One is I can estimate the mean using the
 % pdfs, but this does not really actually get the mean. The other is to
@@ -169,8 +189,10 @@ plot(AV_dif,AV_bias_A,'.k-')
 plot(AV_dif,A_bias_seg,'.g--')
 xlabel({'\Delta AV (A - V)';'<<<< A target to left of V | A target to right of V >>>>'})
 ylabel({'Bias from target location';'(resp - target)'})
-legend('A','V','AV relative to A tar','A and V, no interaction','location', 'best')
+legend('A Saccade','V saccade','Single Saccade relative to A tar','A and V, no interaction','location', 'best')
 title('Response bias vs target separation')
+saveas(gcf,sprintf('%s\\means_by_sep',figpath),'png');
+
 
 %% schematic 3, unity judgement case
 %this one is the most intuitive and therefore probably doesn't need and
@@ -188,6 +210,7 @@ plot(AV_dif, prmat_unity,'k.-')
 title('Percent report unity vs target separation')
 xlabel('\Delta AV (A - V)')
 ylabel('Percent report unity')
+saveas(gcf,sprintf('%s\\unity',figpath),'png');
 
 
 

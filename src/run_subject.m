@@ -34,10 +34,10 @@ end
 %% CI model (new)
 clear m;
 %load saved modelfits, if exist
-if exist(sprintf('results\\modelfits\\%s_m.mat',subject),'file') &&  fitoptions.load_saved_fits
+if exist(sprintf('results\\modelfits\\%s_m.mat',subject),'file') %&&  fitoptions.load_saved_fits
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
     m=m.m;
-else %initialize model struct
+else % if there is no modelstruct at all, initialize model struct
     m.fitoptions = fitoptions;
     m.subject = subject;
     m.models={};
@@ -49,7 +49,8 @@ else %initialize model struct
 end
 
 for mi = 1:size(model_list,1)
-    if ~isempty(m.models)&& ismember(model_list{mi},vertcat(m.models{:}),'rows')
+    model_exists = ismember(model_list{mi},vertcat(m.models{:}),'rows');
+    if ~isempty(m.models)&& model_exists && fitoptions.load_saved_fits
         fprintf('skipping model [%d %d %d %d] because already saved \n',model_list{mi})
         continue
     end
@@ -68,75 +69,84 @@ for mi = 1:size(model_list,1)
             [conditions,responses] = get_prepro_data(test_data,model);
             test_nll{ki} = datalike(conditions,responses,fit_theta{ki},model,fitoptions.eval_midpoints);
         end
-            m.models{end+1} = model;
-            m.thetas{end+1} = fit_theta;
-            m.nll{end+1} = test_nll;
-            m.fit_dist{end+1} = fit_dist;
-            [m.conditions{end+1},m.responses{end+1}] = get_prepro_data(data,model); %for conditions and responses (used for plotting), return whole dataset
+         %for conditions and responses (used for plotting), return whole dataset
+            [conditions,responses] = get_prepro_data(data,model);
     else
         model = model_list{mi}; 
         fprintf('Fitting Subject: %s, Model: %d %d %d %d\n',subject,model)
-        m.models{end+1} = model;
         [conditions,responses] = get_prepro_data(data,model);
         [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model);
+
+    end
+    %if the model structure already has the given model, then overwrite,
+    %otherwise add new row
+    if model_exists 
+        model_ind = ismember(vertcat(m.models{:}),model_list{mi},'rows');
+        m.models{model_ind} = model;
+        m.thetas{model_ind} = fit_theta;
+        m.nll{model_ind} = fit_nll;
+        m.fit_dist{model_ind} = fit_dist;
+        m.conditions{model_ind} = conditions;
+        m.responses{model_ind} = responses;
+    else
+        m.models{end+1} = model;
         m.thetas{end+1} = fit_theta;
         m.nll{end+1} = fit_nll;
         m.fit_dist{end+1} = fit_dist;
         m.conditions{end+1} = conditions;
         m.responses{end+1} = responses;
     end
-    
     %save out model struct
     save(sprintf('results\\modelfits\\%s_m',subject),'m');
 end
-clear m rawdata; %not convinced this does anything but am getting a lot of crashing
+clear m rawdata; %not convinced this does anything
 
 %% making plots for single subject
 %some evaluation plots, note that this replots ALL models in the current
 %configuration. will probably change that in the future but is fine to just
 %set make_plots = 0 for now
-if fitoptions.make_plots
-    set(0,'DefaultFigureVisible','off');
-    for mi = 1:size(model_list,1)
-        model = m.models{mi};
-        
-        if ismember(model(2), [1 3])
-            try
-                mkdir(sprintf('results\\p_single\\model%d%d%d',model))
-            end
-            if model(2) == 3
-                fit_dist = m.fit_dist{mi}{1};
-                responses = m.responses{mi}{1};
-            else 
-                fit_dist = m.fit_dist{mi};
-                responses = m.responses{mi};
-            end
-            plot_psingle(responses,m.conditions{mi},fit_dist);
-            saveas(gcf,sprintf('results\\p_single\\model%d%d%d\\psing_%s',model,m.subject),'png');
-        end
-        
-        if ismember(model(2), [2 3])
-            try
-                mkdir(sprintf('results\\localization\\model%d%d%d\\%s',model,m.subject))
-            end
-            for ic = 1:length(m.conditions{mi})
-                %plotting the real saccade distributions and those predicted by
-                %the model for every condition ic = 5;if model(2) == 3
-                if model(2) == 3
-                    fit_dist = m.fit_dist{mi}{2};
-                    responses = m.responses{mi}{2};
-                else
-                    fit_dist = m.fit_dist{mi};
-                    responses = m.responses{mi};
-                end
-                plot_modelhist(responses(ic,:,:),fit_dist(ic,:,:),m.fitoptions.eval_midpoints)
-                title(sprintf('%d A %d V',m.conditions{mi}(ic,:)))
-                set(gcf,'Position',[100,60,1049,895])
-                saveas(gcf,sprintf('results\\localization\\model%d%d%d\\%s\\%dA%dV',model,m.subject,m.conditions{mi}(ic,:)),'png');
-            end
-        end
-    end
-    close all;
-    set(0,'DefaultFigureVisible','on');
-end
+% if fitoptions.make_plots
+%     set(0,'DefaultFigureVisible','off');
+%     for mi = 1:size(model_list,1)
+%         model = m.models{mi};
+%         
+%         if ismember(model(2), [1 3])
+%             try
+%                 mkdir(sprintf('results\\p_single\\model%d%d%d',model))
+%             end
+%             if model(2) == 3
+%                 fit_dist = m.fit_dist{mi}{1};
+%                 responses = m.responses{mi}{1};
+%             else 
+%                 fit_dist = m.fit_dist{mi};
+%                 responses = m.responses{mi};
+%             end
+%             plot_psingle(responses,m.conditions{mi},fit_dist);
+%             saveas(gcf,sprintf('results\\p_single\\model%d%d%d\\psing_%s',model,m.subject),'png');
+%         end
+%         
+%         if ismember(model(2), [2 3])
+%             try
+%                 mkdir(sprintf('results\\localization\\model%d%d%d\\%s',model,m.subject))
+%             end
+%             for ic = 1:length(m.conditions{mi})
+%                 %plotting the real saccade distributions and those predicted by
+%                 %the model for every condition ic = 5;if model(2) == 3
+%                 if model(2) == 3
+%                     fit_dist = m.fit_dist{mi}{2};
+%                     responses = m.responses{mi}{2};
+%                 else
+%                     fit_dist = m.fit_dist{mi};
+%                     responses = m.responses{mi};
+%                 end
+%                 plot_modelhist(responses(ic,:,:),fit_dist(ic,:,:),m.fitoptions.eval_midpoints)
+%                 title(sprintf('%d A %d V',m.conditions{mi}(ic,:)))
+%                 set(gcf,'Position',[100,60,1049,895])
+%                 saveas(gcf,sprintf('results\\localization\\model%d%d%d\\%s\\%dA%dV',model,m.subject,m.conditions{mi}(ic,:)),'png');
+%             end
+%         end
+%     end
+%     close all;
+%     set(0,'DefaultFigureVisible','on');
+% end
 end

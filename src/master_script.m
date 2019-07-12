@@ -26,13 +26,16 @@ subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
 % load example day, for testing
-model_list = {[0 0 4 1];[0 0 4 3];[1 0 1 1];[1 0 1 3];[2 0 1 1]; [1 1 2 1];[1 1 2 3]; [1 2 2 1]; [1 2 2 3]; [1 1 3 1]; [1 1 3 3]; [1 2 3 1];[1 2 3 3]};
+%model_list = {[0 0 4 1];[0 0 4 3];[1 0 1 1];[1 0 1 3];[2 0 1 1]; [1 1 2 1];[1 1 2 3]; [1 2 2 1]; [1 2 2 3]; [1 1 3 1]; [1 1 3 3]; [1 2 3 1];[1 2 3 3]};
+%reduced model list, using minimal viable models;
+model_list = {[0 0 4 1];[1 0 1 1];[1 1 2 1];[1 1 3 1];[2 0 1 1];[1 2 2 1];[1 2 3 1];[1 3 2 1];[1 3 3 1]};
+
 %setting fitting procedure options
 global fitoptions MAXRNG
 MAXRNG = 50;
 fitoptions.binsize = 1; %size of bins used for responses, in degrees.
 fitoptions.load_saved_fits = 1; %load saved fits, if they exist
-fitoptions.make_plots = 0;
+% fitoptions.make_plots = 0;
 fitoptions.n_iterations = 1; %set option to repeat fminsearch for n times
 fitoptions.parameter_names = {'A_sig','V_sig','prior_sig','p_common','lambda_uni','lambda_loc','prior_mu'};
 fitoptions.grid_fineness = 3; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 
@@ -44,7 +47,8 @@ fitoptions.cross_validate = 0;
 fitoptions.kfolds = 5;
 
 fitoptions.dynamic_bins = 0; %experimental
-%todo:fix this
+
+%todo:fix this method for running separate or combined monkey datasets
 run_days_separately = 0;
 
 if ~exist('results\modelfits', 'dir')
@@ -52,8 +56,8 @@ if ~exist('results\modelfits', 'dir')
 end
 
 %% testing subset
-model_list = {[1 1 3 1];[1 1 3 2];[1 1 3 3]};
-subject_list = {'Juno','Yoko','H08'};
+% model_list = {[1 1 3 1];[1 1 3 2];[1 1 3 3]};
+% subject_list = {'Juno','Yoko','H08'};
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};
