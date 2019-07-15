@@ -27,16 +27,16 @@
 %plot 3: unity judgement by target sep. This plot probably won't make the
 %paper because it conveys very little info but might be useful for
 %demonstration purposes.
-clear;close all;
-
-local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
-cd(local_directory)
-addpath('src', 'src\plotting','results','data');
-figpath = 'results\figures\schematics';
-try
-    mkdir(figpath)
-end
-
+% clear;close all;
+% 
+% local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
+% cd(local_directory)
+% addpath('src', 'src\plotting','results','data');
+% figpath = 'results\figures\schematics';
+% try
+%     mkdir(figpath)
+% end
+function plot_schematics(figpath)
 %% options
 combination_rule = 1; %1 = bayes reweight, 2 = model selection 
 A_sig = 5;
@@ -48,13 +48,6 @@ prior_mu = 0;
 prior_sig =200; %easier to just make this very large rather than take out of code
 p_common = .5;
 xrange = -50:bin_size:50;
-
-
-set(0, 'DefaultLineLineWidth', 2);
-set(0, 'DefaultLineMarkerSize', 20);
-set(0,'DefaultFigurePosition',[25,50,800,800])
-
-
 %% Generate pdfs
 xrange_A(1,1,:) = xrange;
 xrange_V(1,:,1) = xrange;
@@ -106,7 +99,6 @@ prmat_sac(:,diag_array) = prmat_sac(:,diag_array) + squeeze(prmat_AV_c1(:,1,1,:)
 prmat_A_seg = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), A_seg_pdf), 2), 3);
 prmat_V_seg = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), V_seg_pdf), 2), 3);
 
-
 %% schematic 1, showing pdfs for 2 conditions (including bias)
 figure
 set(gcf,'Position',[25,100,1600,500])
@@ -143,7 +135,7 @@ for plot_pair = [8,10]
     legend('Auditory CI','Visual CI','Integrated','Auditory unimodal','Visual Unimodal')
     plot_ind = plot_ind+1;
 end
-% saveas(gcf,sprintf('%s\\ex_pdfs',figpath),'png');
+saveas(gcf,sprintf('%s\\ex_pdfs',figpath),'png');
 %% schematic 2, format for collapsing across target conditions, showing only the mean of the distributions.
 % there are two ways to do this. One is I can estimate the mean using the
 % pdfs, but this does not really actually get the mean. The other is to
@@ -185,7 +177,7 @@ plot(AV_dif,A_bias,'.r-')
 hold on
 plot(AV_dif,V_bias,'.b-')
 plot(AV_dif,AV_bias_A,'.k-')
-%plot(AV_dif,AV_bias_V,'.k-')
+% plot(AV_dif,AV_bias_V,'.k-')
 plot(AV_dif,A_bias_seg,'.g--')
 xlabel({'\Delta AV (A - V)';'<<<< A target to left of V | A target to right of V >>>>'})
 ylabel({'Bias from target location';'(resp - target)'})
@@ -203,16 +195,16 @@ saveas(gcf,sprintf('%s\\means_by_sep',figpath),'png');
 %really isn't much to it, and the difference between the models are super
 %subtle with respect to this one (except the null model) so I can't even
 %really use it to explain much. So probably won't include but whatever.
+% 
+% figure
+% prmat_unity = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), c1post), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
+% plot(AV_dif, prmat_unity,'k.-')
+% title('Percent report unity vs target separation')
+% xlabel('\Delta AV (A - V)')
+% ylabel('Percent report unity')
+% saveas(gcf,sprintf('%s\\unity',figpath),'png');
+% 
+% 
 
-figure
-prmat_unity = qtrapz(qtrapz(bsxfun(@times, bsxfun(@times, xpdf_V,xpdf_A), c1post), 2), 3); %this is a recreation of what VestBMS_finalqtrapz does but not done in C.
-plot(AV_dif, prmat_unity,'k.-')
-title('Percent report unity vs target separation')
-xlabel('\Delta AV (A - V)')
-ylabel('Percent report unity')
-saveas(gcf,sprintf('%s\\unity',figpath),'png');
-
-
-
-
+end
 

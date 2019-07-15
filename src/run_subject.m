@@ -49,7 +49,11 @@ else % if there is no modelstruct at all, initialize model struct
 end
 
 for mi = 1:size(model_list,1)
-    model_exists = ismember(model_list{mi},vertcat(m.models{:}),'rows');
+    if exist(sprintf('results\\modelfits\\%s_m.mat',subject),'file')
+        model_exists = ismember(model_list{mi},vertcat(m.models{:}),'rows');
+    else
+        model_exists = 0;
+    end
     if ~isempty(m.models)&& model_exists && fitoptions.load_saved_fits
         fprintf('skipping model [%d %d %d %d] because already saved \n',model_list{mi})
         continue
