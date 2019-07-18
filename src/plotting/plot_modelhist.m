@@ -11,8 +11,7 @@
 %
 %
 
-function plot_modelhist(saccades,predicted,xlocs)
-figure;
+function plot_modelhist(saccades,predicted,xlocs, plot_pred)
 
 if ndims(saccades) == 2 %format for location estimation when all saccades are put together
     norm_saccades=saccades/sum(saccades);
@@ -43,17 +42,18 @@ elseif ndims(saccades) == 3
     I_mat = logical(eye([length(xlocs),length(xlocs)]));
     sing_sacs = norm_saccades(:,I_mat);
     norm_saccades(:,I_mat) = 0; %remove saccades that are AV from counts
-    A_sacs = sum(norm_saccades,2)/2; %divide by 2 to make probabilities sum to 1
-    V_sacs = sum(norm_saccades,3)/2;
+    A_sacs = sum(norm_saccades,2); %divide by 2 to make probabilities sum to 1
+    V_sacs = sum(norm_saccades,3); %JTM 7/18/19 made change here, removed division by 2
     sac_bar = bar(xlocs,[sing_sacs(:),A_sacs(:),V_sacs(:)],'stacked');%normalizing to probability
     sac_bar(1).FaceColor = [.2 .2 .2];
     sac_bar(2).FaceColor = [1 .5 .5];
     sac_bar(3).FaceColor = [.5 .5 1];
     hold on
-    projected_pred = (squeeze(sum(norm_predicted,2)) + squeeze(sum(norm_predicted,3))')/2; %divide by 2 to normalize
-    plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
+    if plot_pred
+        projected_pred = (squeeze(sum(norm_predicted,2)) + squeeze(sum(norm_predicted,3))')/2; %divide by 2 to normalize
+        plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
+    end
     xlim([-40 40])
-    legend('Single Sac','A sac','V sac','Modeled','Location','Best');
     xlabel('endpoint location (degrees)');
     ylabel('% saccades in bin')
     set(gca,'box','off')

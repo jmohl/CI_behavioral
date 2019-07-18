@@ -16,7 +16,7 @@ local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
 cd(local_directory)
 addpath('data','src','src\lautils', 'src\plotting');
 
-subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+subject_list = {'Juno' 'Yoko'};% 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
 %% Select models to run
 
@@ -49,8 +49,15 @@ fitoptions.kfolds = 5;
 fitoptions.dynamic_bins = 0; %experimental
 
 %todo:fix this method for running separate or combined monkey datasets
-run_days_separately = 0;
-
+run_days_separately = 1;
+% if run_days_separately
+%     %this subject list is set to match the dates selected randomly for the
+%     %combined task
+%     subject_list =  {'Juno_AVD2_2017_07_20_2' 'Juno_AVD2_2017_07_26' 'Juno_AVD2_2017_08_02' 'Juno_AVD2_2017_09_06' 'Juno_AVD2_2017_12_13' ...
+%      'Juno_AVD2_2018_01_23' 'Juno_AVD2_2018_02_27' 'Juno_AVD2_2018_04_05' 'Juno_AVD2_2018_04_09' 'Juno_AVD2_2018_04_10' ...
+%     'Yoko_AVD2_2018_11_29' 'Yoko_AVD2_2019_01_09' 'Yoko_AVD2_2019_01_10' 'Yoko_AVD2_2019_01_30' 'Yoko_AVD2_2019_03_07' ...
+%     'Yoko_AVD2_2019_03_12' 'Yoko_AVD2_2019_03_19' 'Yoko_AVD2_2019_04_03' 'Yoko_AVD2_2019_04_17' 'Yoko_AVD2_2019_04_24'};
+% end
 if ~exist('results\modelfits', 'dir')
     mkdir('results\modelfits')
 end

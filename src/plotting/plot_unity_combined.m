@@ -2,7 +2,7 @@
 %
 % -------------------
 % Jeff Mohl
-% 4/24/19
+% 7/16/19
 % -------------------
 %
 % Description: similar to plot_unity, but combines across subjects and
@@ -45,7 +45,7 @@ l2 = plot(avlabels,model_mean,'g','LineWidth',2);
 
 hold off
 legend([l1 l2],'Mean Response','Model predicted')
-xlabel('\Delta AV')
+xlabel('Target Separation (A - V)')
 ylabel('% unity judgement')
 title('% of trials reported unity by target separation')
 

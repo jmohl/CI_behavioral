@@ -114,28 +114,28 @@ for plot_pair = [8,10]
     cV = cV - cAV;
     %normalize all pdfs to 1, this eliminates the ratio but makes it easier to
     %compare variance and mean of all
-    cA = cA/sum(cA);
-    cV=cV/sum(cV);
-    cAV = cAV/sum(cAV);
-    
+%     cA = cA/sum(cA);
+%     cV=cV/sum(cV);
+%     cAV = cAV/sum(cAV);
+%     
+    plot(xrange,cAV,'k')
     plot(xrange,cA,'r')
     plot(xrange,cV,'b')
-    plot(xrange,cAV,'k')
     
     cA_seg= squeeze(prmat_A_seg(plot_pair,:,:,:));
     cV_seg= squeeze(prmat_V_seg(plot_pair,:,:,:));
-    cA_seg=cA_seg/sum(cA_seg);
-    cV_seg=cV_seg/sum(cV_seg);
+%     cA_seg=cA_seg/sum(cA_seg);
+%     cV_seg=cV_seg/sum(cV_seg);
     
-    plot(xrange,cA_seg,'r--')
-    plot(xrange,cV_seg,'b--')
+    plot(xrange,cA_seg,'--','Color',[1,0,0,.25])
+    plot(xrange,cV_seg,'--','Color',[0,0,1,.25])
     title(sprintf('%d aud, %d vis',A_tar(plot_pair),V_tar(plot_pair)));
     ylabel('Probability')
     xlabel('Stimulus feature (location)')
-    legend('Auditory CI','Visual CI','Integrated','Auditory unimodal','Visual Unimodal')
+    legend('Integrated estimate (1 cause)','Auditory estimate (2 cause)','Visual estimate (2 cause)','Auditory Unimodal','Visual Unimodal')
     plot_ind = plot_ind+1;
 end
-saveas(gcf,sprintf('%s\\ex_pdfs',figpath),'png');
+saveas(gcf,sprintf('%s\\ex_pdfs',figpath),'svg');
 %% schematic 2, format for collapsing across target conditions, showing only the mean of the distributions.
 % there are two ways to do this. One is I can estimate the mean using the
 % pdfs, but this does not really actually get the mean. The other is to
@@ -179,11 +179,11 @@ plot(AV_dif,V_bias,'.b-')
 plot(AV_dif,AV_bias_A,'.k-')
 % plot(AV_dif,AV_bias_V,'.k-')
 plot(AV_dif,A_bias_seg,'.g--')
-xlabel({'\Delta AV (A - V)';'<<<< A target to left of V | A target to right of V >>>>'})
+xlabel({'AV (A - V)';'<<<< A target to left of V | A target to right of V >>>>'})
 ylabel({'Bias from target location';'(resp - target)'})
 legend('A Saccade','V saccade','Single Saccade relative to A tar','A and V, no interaction','location', 'best')
 title('Response bias vs target separation')
-saveas(gcf,sprintf('%s\\means_by_sep',figpath),'png');
+saveas(gcf,sprintf('%s\\means_by_sep',figpath),'svg');
 
 
 %% schematic 3, unity judgement case
@@ -202,7 +202,7 @@ saveas(gcf,sprintf('%s\\means_by_sep',figpath),'png');
 % title('Percent report unity vs target separation')
 % xlabel('\Delta AV (A - V)')
 % ylabel('Percent report unity')
-% saveas(gcf,sprintf('%s\\unity',figpath),'png');
+% saveas(gcf,sprintf('%s\\unity',figpath),'svg');
 % 
 % 
 

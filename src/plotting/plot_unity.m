@@ -33,7 +33,7 @@ plot(avlabels,mean_fit,'g','LineWidth',2);
 
 hold off
 legend('Single Conditions','Mean Response','Model predicted')
-xlabel('\Delta AV')
+xlabel('Target Separation (A - V)')
 ylabel('% unity judgement')
 title('% of trials reported unity by target separation')
 end

@@ -24,22 +24,44 @@ set(0,'DefaultFigurePosition',[25,50,800,800])
 %% Plot Schematics - this runs fairly slow because it is doing numerical integration
 plot_schematics(figpath)
 
-%% Set demo models to use
-% [1 1 3 1] [1 2 3 1] [1 3 3 1]
-% model(1) = CI type: none(0), Bayes (1) or probabilistic fusion (2)
-% model(2) = stimulus fusion: none(0), Bayes reweight(1), model selection(2), probabilistic fusion (3)
-% model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
-% model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
-
+%% load model structures.
 subject_m = {'Yoko' 'Juno'};
 subject_h = {'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
-clear models_m models_h ind;
+
+clear models_m models_h models_my models_mj ind;
+
+%load monkey data
 ind = 1;
 for subject = subject_m
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject{:}));
-    models_m{ind}=m.m;
+    models_m{ind}=m.m; 
+    ind = ind+1;
+    %for each monkey subject, get the individual runs names as well 
+
+end
+%split up yoko days
+file_name = sprintf('/Yoko*AVD2*.mat');
+ind_days = dir(['results\modelfits' file_name]);
+subject_my = {ind_days.name};
+ind = 1;
+for subject = subject_my
+    m=load(sprintf('results\\modelfits\\%s',subject{:}));
+    models_my{ind}=m.m;
     ind = ind+1;
 end
+
+%split up juno days
+file_name = sprintf('/Juno*AVD2*.mat');
+ind_days = dir(['results\modelfits' file_name]);
+subject_mj = {ind_days.name};
+ind = 1;
+for subject = subject_mj
+    m=load(sprintf('results\\modelfits\\%s',subject{:}));
+    models_mj{ind}=m.m;
+    ind = ind+1;
+end
+
+%combined human subjects
 ind = 1;
 for subject = subject_h
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject{:}));
@@ -47,9 +69,14 @@ for subject = subject_h
     ind = ind+1;
 end
 
-%% Plot behavioral data with model fits
-
+%% unity judgement plots
+% Set demo models to use
+% model(1) = CI type: none(0), Bayes (1) or probabilistic fusion (2)
+% model(2) = stimulus fusion: none(0), Bayes reweight(1), model selection(2), probabilistic fusion (3)
+% model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
+% model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
 model = [1 0 1 1];
+
 % plot individually for monkeys
 for ind = 1:length(models_m)
     m=models_m{ind};
@@ -74,56 +101,59 @@ figure
 plot_unity_combined(models_h,model)
 saveas(gcf,sprintf('%s\\human_unity',figpath),'svg');
 
+%plot combined for yoko
+figure
+plot_unity_combined(models_my,model)
+title('% of trials reported unity by target separation - Yoko')
+saveas(gcf,sprintf('%s\\yoko_unity_splitday',figpath),'svg');
 
+% plot combined for juno
+figure
+plot_unity_combined(models_mj,model)
+title('% of trials reported unity by target separation - Juno')
+saveas(gcf,sprintf('%s\\juno_unity_splitday',figpath),'svg');
 
-%% [DEFUNCT] f1: schematics under different CI models
-
-%going to use the 2d plots for different actual conditions, projected down
-%onto the different axes for visualization. Noticed that these
-%distributions don't look great at the coarseness I have evaluated them at,
-%so going to create a demo pdf with closer spacing and save that for
-%plotting
-
-%demo models to use
-% [1 1 3 1] [1 2 3 1] [1 3 3 1]
-% model(1) = CI type: Bayes (1) or probabilistic fusion (2)
-% model(2) = stimulus fusion: Bayes reweight(1), model selection(2), probabilistic fusion (3)
+%% localization plots with model fits
+% Set demo models to use
+% model(1) = CI type: none(0), Bayes (1) or probabilistic fusion (2)
+% model(2) = stimulus fusion: none(0), Bayes reweight(1), model selection(2), probabilistic fusion (3)
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
-m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
-m=m.m;
+model = [1 1 2 1];
+example_conds = [2 4]; 
+plot_pred = 1;
 
-model = [1 1 1 1];
-demo_conds = [3,4];
-
-locations = m.fitoptions.eval_midpoints;
-model_ind = ismember(vertcat(m.models{:}),model,'rows');
-
-fit_dist = m.fit_dist{model_ind};
-if iscell(fit_dist)
-    fit_dist = fit_dist{2};
+%plot for monkey days with pooled model fit
+for ind = 1:length(models_m)
+    m=models_m{ind};
+    subject = m.subject;
+    %generate plot for single subject
+    plot_localization(m,model,example_conds,plot_pred);
+    set(gcf,'Position',[25,50,1300,500])
+    saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'svg');
+    saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'png');
 end
+%if given an array of model fits, will average them together and plot that
+plot_localization(models_h,model,example_conds,plot_pred);
+set(gcf,'Position',[25,50,1300,500])
+saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'svg');
+saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'png');
 
-for ic = demo_conds
-    figure;
-    this_dist = squeeze(fit_dist(ic,:,:));
-    imagesc(locations,locations,this_dist)
-    set(gca, 'YDir', 'normal')
-    xlim([-40 40])
-    ylim([-40 40])
-    xlabel('Auditory Location')
-    ylabel('Visual Location')
-    title(sprintf('%d Aud, %d Vis pair', m.conditions{model_ind}(ic,:)))
-    %     saveas(gcf,sprintf('%s\\%s%dA%dV_pdf',figpath,subject, m.conditions{model_ind}(ic,:)),'png');
-    %project into auditory dimension
-    I_mat = logical(eye([length(locations),length(locations)]));
-    aud_dist = sum(this_dist,1);
-    vis_dist = sum(this_dist,2);
-    AV_dist = this_dist(I_mat);
-    figure
-    hold on
-    plot(locations,aud_dist,'r')
-    plot(locations,vis_dist,'b')
-    plot(locations,AV_dist,'k')
-    
-end
+plot_localization(models_mj,model,example_conds,plot_pred);
+set(gcf,'Position',[25,50,1300,500])
+saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'svg');
+saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'png');
+
+%some issue here where one of the days apparently doesn't have enough data
+%for one of the uni conditions. So that's annoying.
+plot_localization(models_my,model,example_conds,plot_pred);
+set(gcf,'Position',[25,50,1300,500])
+saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'svg');
+saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'png');
+
+
+
+
+
+
+
