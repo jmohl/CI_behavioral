@@ -19,6 +19,8 @@ n_pooled_days = 10;
 seed = 'default';
 
 tidy_data = load_pool_data(n_pooled_days,subject,seed);
+%7/22/19 this list is no longer accurate, changed the way I was pooling data to ensure
+% sufficient trials per condition
 %dates used     
 %     {'Juno_AVD2_2017_07_20_2'}
 %     {'Juno_AVD2_2017_07_26'  }
@@ -38,6 +40,8 @@ n_pooled_days = 10;
 seed = 'default';
 
 tidy_data = load_pool_data(n_pooled_days,subject,seed);
+% 7/22/19 this is now defunct, changed the way I was pooling data to ensure
+% sufficient trials per condition
 %     {'Yoko_AVD2_2018_11_29'}
 %     {'Yoko_AVD2_2019_01_09'}
 %     {'Yoko_AVD2_2019_01_10'}
