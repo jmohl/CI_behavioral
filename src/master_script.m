@@ -16,7 +16,7 @@ local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
 cd(local_directory)
 addpath('data','src','src\lautils', 'src\plotting');
 
-subject_list = {'Juno' 'Yoko'};% 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
 %% Select models to run
 
@@ -46,6 +46,9 @@ fitoptions.eval_midpoints = linspace(-MAXRNG+fitoptions.binsize/2,MAXRNG-fitopti
 fitoptions.cross_validate = 0;
 fitoptions.kfolds = 5;
 
+fitoptions.use_uni_means= 1; %experimental, only in place for the non-cross validated code in run_subject
+fitoptions.strict_filter=0; %experimental
+
 fitoptions.dynamic_bins = 0; %experimental
 
 %todo:fix this method for running separate or combined monkey datasets
@@ -63,8 +66,8 @@ if ~exist('results\modelfits', 'dir')
 end
 
 %% testing subset
-% model_list = {[1 1 3 1];[1 1 3 2];[1 1 3 3]};
-% subject_list = {'Juno','Yoko','H08'};
+ model_list = {[1 1 2 1];[1 1 3 1];};
+ subject_list = {'Juno','Yoko','H08'};
 %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};

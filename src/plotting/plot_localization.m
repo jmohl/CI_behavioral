@@ -25,7 +25,7 @@ if length(m) > 1
        try
        if model(3) == 3 %joint fit models have cell array rather than vectors for these
            responses(:,:,:,subj_ind) = this_m.responses{model_ind}{2};
-           fit_dist(:,:,:,subj_ind) = this_m.fit_dist{model_ind}{2};
+           fit_dist(:,:,:,subj_ind) = this_m.fit_dist{model_ind}{2};           
        else
            responses(:,:,:,subj_ind) = this_m.responses{model_ind};
            fit_dist(:,:,:,subj_ind) = this_m.fit_dist{model_ind};
@@ -42,8 +42,6 @@ if length(m) > 1
     fit_dist = mean(fit_dist,4);
     A_resp = mean(A_resp,4);
     V_resp = mean(V_resp,4);
-    
-   
 else
     %otherwise, get data from single model structure
     model_ind = ismember(vertcat(m.models{:}),model,'rows');
@@ -68,16 +66,21 @@ figure
 plot_ind = 1;
 for this_ex = example_conds
     subplot(1,length(example_conds),plot_ind)
-    plot_modelhist(responses(this_ex,:,:),fit_dist(this_ex,:,:),xrange,plot_pred);
+    hold on
+     plot_modelhist(responses(this_ex,:,:),fit_dist(this_ex,:,:),xrange,plot_pred);
     % add unimodal conditions to plot
     norm_A = A_resp(uni_cond{1}(:) == conditions(this_ex,1),:);
     norm_A = norm_A/sum(norm_A);%normalizing to probability, *2 because double saccade trials are rescaled this way for comparison with single saccade
     norm_V = V_resp(uni_cond{2}(:) == conditions(this_ex,2),:);
     norm_V = norm_V/sum(norm_V);%normalizing to probability,
+    % get mean values
+    mean_A = sum(norm_A.*xrange,2)./sum(norm_A,2);
+    
     plot(xrange,norm_A,'--','Color',[1 0 0 .5]);
     plot(xrange,norm_V,'--','Color',[0 0 1 .5]);
+%     text(mean_A,max(norm_A),sprintf('|%2.2f',mean_A))
     title(sprintf('A=%d, V=%d',conditions(this_ex,1:2)));
-    xlim([-35 10])
+%     xlim([-35 10])
     plot_ind = 1 + plot_ind;
 end
 if plot_pred

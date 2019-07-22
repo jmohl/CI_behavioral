@@ -17,7 +17,7 @@ try
 end
 
 set(0, 'DefaultLineLineWidth', 2);
-set(0, 'DefaultLineMarkerSize', 20);
+set(0, 'DefaultLineMarkerSize', 7);
 set(0,'DefaultFigurePosition',[25,50,800,800])
 
 
@@ -30,33 +30,35 @@ subject_h = {'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
 clear models_m models_h models_my models_mj ind;
 
+modelfits_loc = 'modelfits';
 %load monkey data
-ind = 1;
-for subject = subject_m
-    m=load(sprintf('results\\modelfits\\%s_m.mat',subject{:}));
-    models_m{ind}=m.m; 
-    ind = ind+1;
-    %for each monkey subject, get the individual runs names as well 
-
-end
+% ind = 1;
+% for subject = subject_m
+%     m=load(sprintf('results\\%s\\%s_m.mat',modelfits_loc,subject{:}));
+%     models_m{ind}=m.m; 
+%     ind = ind+1;
+%     %for each monkey subject, get the individual runs names as well 
+% 
+% end
 %split up yoko days
 file_name = sprintf('/Yoko*AVD2*.mat');
-ind_days = dir(['results\modelfits' file_name]);
+ind_days = dir([sprintf('results\\%s',modelfits_loc) file_name]);
 subject_my = {ind_days.name};
 ind = 1;
 for subject = subject_my
-    m=load(sprintf('results\\modelfits\\%s',subject{:}));
+    m=load(sprintf('results\\%s\\%s',modelfits_loc,subject{:}));
     models_my{ind}=m.m;
     ind = ind+1;
 end
 
 %split up juno days
 file_name = sprintf('/Juno*AVD2*.mat');
-ind_days = dir(['results\modelfits' file_name]);
+ind_days = dir([sprintf('results\\%s',modelfits_loc) file_name]);
 subject_mj = {ind_days.name};
 ind = 1;
 for subject = subject_mj
-    m=load(sprintf('results\\modelfits\\%s',subject{:}));
+    ind_days = dir([sprintf('results\\%s',modelfits_loc) file_name]);
+    m=load(sprintf('results\\%s\\%s',modelfits_loc,subject{:}));
     models_mj{ind}=m.m;
     ind = ind+1;
 end
@@ -64,7 +66,9 @@ end
 %combined human subjects
 ind = 1;
 for subject = subject_h
-    m=load(sprintf('results\\modelfits\\%s_m.mat',subject{:}));
+    file_name = sprintf('/%s*AVD2*.mat',subject{:});
+    fileid = dir([sprintf('results\\%s',modelfits_loc) file_name]);
+    m=load(sprintf('results\\%s\\%s',modelfits_loc,fileid.name));
     models_h{ind}=m.m;
     ind = ind+1;
 end
@@ -100,18 +104,24 @@ end
 figure
 plot_unity_combined(models_h,model)
 saveas(gcf,sprintf('%s\\human_unity',figpath),'svg');
+saveas(gcf,sprintf('%s\\human_unity',figpath),'png');
+
 
 %plot combined for yoko
 figure
 plot_unity_combined(models_my,model)
 title('% of trials reported unity by target separation - Yoko')
 saveas(gcf,sprintf('%s\\yoko_unity_splitday',figpath),'svg');
+saveas(gcf,sprintf('%s\\yoko_unity_splitday',figpath),'png');
+
 
 % plot combined for juno
 figure
 plot_unity_combined(models_mj,model)
 title('% of trials reported unity by target separation - Juno')
 saveas(gcf,sprintf('%s\\juno_unity_splitday',figpath),'svg');
+saveas(gcf,sprintf('%s\\juno_unity_splitday',figpath),'png');
+
 
 %% localization plots with model fits
 % Set demo models to use
@@ -130,30 +140,47 @@ for ind = 1:length(models_m)
     %generate plot for single subject
     plot_localization(m,model,example_conds,plot_pred);
     set(gcf,'Position',[25,50,1300,500])
-    saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'svg');
-    saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'png');
+%     saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'svg');
+%     saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'png');
 end
 %if given an array of model fits, will average them together and plot that
+for ind = [5,15]
+    example_conds = [5, 15];
 plot_localization(models_h,model,example_conds,plot_pred);
 set(gcf,'Position',[25,50,1300,500])
-saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'svg');
-saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'png');
-
+% saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'svg');
+% saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'png');
+% 
 plot_localization(models_mj,model,example_conds,plot_pred);
 set(gcf,'Position',[25,50,1300,500])
-saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'svg');
-saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'png');
+% saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'svg');
+% saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'png');
 
 %some issue here where one of the days apparently doesn't have enough data
 %for one of the uni conditions. So that's annoying.
 plot_localization(models_my,model,example_conds,plot_pred);
 set(gcf,'Position',[25,50,1300,500])
-saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'svg');
-saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'png');
+% saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'svg');
+% saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'png');
+end
+%% Condensed localization plot
+
+model = [1 1 2 1];
+true_loc = 0; %option to use true target locations or relative locations (from unimodal saccades) for specifying bias.
+plot_condensed_loc(models_mj,model,true_loc);
+title('Juno')
+saveas(gcf,sprintf('%s\\juno_condensed_bias',figpath),'png');
+
+plot_condensed_loc(models_my,model,true_loc);
+title('Yoko')
+saveas(gcf,sprintf('%s\\yoko_condensed_bias',figpath),'png');
+
+plot_condensed_loc(models_h,model,true_loc);
+title('Human')
+saveas(gcf,sprintf('%s\\HU_condensed_bias',figpath),'png');
 
 
-
-
-
-
+%% unimodal localization plot
+example_conds = [2 4]; 
+plot_localization(models_h,[0 0 4 1],example_conds,plot_pred);
 

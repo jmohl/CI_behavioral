@@ -19,7 +19,9 @@ global fitoptions
 
 %% Clean data
 % run stringent single saccade filter TESTING
-raw_data = strict_single_filter(raw_data);
+if fitoptions.strict_filter
+    raw_data = strict_single_filter(raw_data);
+end
 %get valid data only
 valid_data = raw_data(logical(raw_data.valid_tr),:);
 
@@ -79,6 +81,9 @@ for mi = 1:size(model_list,1)
         model = model_list{mi}; 
         fprintf('Fitting Subject: %s, Model: %d %d %d %d\n',subject,model)
         [conditions,responses] = get_prepro_data(data,model);
+        if fitoptions.use_uni_means % testing JM
+            conditions = get_unimodal_means(conditions,data,model);
+        end
         [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model);
 
     end
@@ -105,52 +110,4 @@ for mi = 1:size(model_list,1)
 end
 clear m rawdata; %not convinced this does anything
 
-%% making plots for single subject
-%some evaluation plots, note that this replots ALL models in the current
-%configuration. will probably change that in the future but is fine to just
-%set make_plots = 0 for now
-% if fitoptions.make_plots
-%     set(0,'DefaultFigureVisible','off');
-%     for mi = 1:size(model_list,1)
-%         model = m.models{mi};
-%         
-%         if ismember(model(2), [1 3])
-%             try
-%                 mkdir(sprintf('results\\p_single\\model%d%d%d',model))
-%             end
-%             if model(2) == 3
-%                 fit_dist = m.fit_dist{mi}{1};
-%                 responses = m.responses{mi}{1};
-%             else 
-%                 fit_dist = m.fit_dist{mi};
-%                 responses = m.responses{mi};
-%             end
-%             plot_psingle(responses,m.conditions{mi},fit_dist);
-%             saveas(gcf,sprintf('results\\p_single\\model%d%d%d\\psing_%s',model,m.subject),'png');
-%         end
-%         
-%         if ismember(model(2), [2 3])
-%             try
-%                 mkdir(sprintf('results\\localization\\model%d%d%d\\%s',model,m.subject))
-%             end
-%             for ic = 1:length(m.conditions{mi})
-%                 %plotting the real saccade distributions and those predicted by
-%                 %the model for every condition ic = 5;if model(2) == 3
-%                 if model(2) == 3
-%                     fit_dist = m.fit_dist{mi}{2};
-%                     responses = m.responses{mi}{2};
-%                 else
-%                     fit_dist = m.fit_dist{mi};
-%                     responses = m.responses{mi};
-%                 end
-%                 plot_modelhist(responses(ic,:,:),fit_dist(ic,:,:),m.fitoptions.eval_midpoints)
-%                 title(sprintf('%d A %d V',m.conditions{mi}(ic,:)))
-%                 set(gcf,'Position',[100,60,1049,895])
-%                 saveas(gcf,sprintf('results\\localization\\model%d%d%d\\%s\\%dA%dV',model,m.subject,m.conditions{mi}(ic,:)),'png');
-%             end
-%         end
-%     end
-%     close all;
-%     set(0,'DefaultFigureVisible','on');
-% end
 end

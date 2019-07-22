@@ -16,3 +16,4 @@ for i = 1:size(endpoint_data,2)
     mu_vector(i) = mean(this_data);
     sig_vector(i) = std(this_data);
 end
+end
