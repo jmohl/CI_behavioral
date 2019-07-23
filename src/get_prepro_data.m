@@ -75,6 +75,11 @@ if unity_judge %unity judgement model
     end
 end
 if location_estimate %localization
+    if fitoptions.strict_filter
+        data = strict_single_filter(data);
+        data = data(logical(data.valid_tr),:);
+    end
+    
     if fitoptions.dynamic_bins
         responses_L = zeros(length(conditions),28,28); %[condition x Vlocs x Alocs]
     else

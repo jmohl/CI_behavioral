@@ -22,7 +22,6 @@ if length(m) > 1
        model_ind = ismember(vertcat(this_m.models{:}),model,'rows');
        conditions = this_m.conditions{model_ind};
        xrange = this_m.fitoptions.eval_midpoints;
-       try
        if model(3) == 3 %joint fit models have cell array rather than vectors for these
            responses(:,:,:,subj_ind) = this_m.responses{model_ind}{2};
            fit_dist(:,:,:,subj_ind) = this_m.fit_dist{model_ind}{2};           
@@ -35,7 +34,6 @@ if length(m) > 1
        uni_cond = this_m.conditions{uni_ind};
        A_resp(:,:,:, subj_ind) = this_m.responses{uni_ind}{1};
        V_resp(:,:,:, subj_ind) = this_m.responses{uni_ind}{2};
-       end
    end
    %get mean model and response fits
     responses = mean(responses,4);

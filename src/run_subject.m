@@ -18,10 +18,10 @@ function run_subject(subject,raw_data,model_list)
 global fitoptions
 
 %% Clean data
-% run stringent single saccade filter TESTING
-if fitoptions.strict_filter
-    raw_data = strict_single_filter(raw_data);
-end
+% run stringent single saccade filter TESTING, moved to get_prepro_data
+% if fitoptions.strict_filter 
+%     raw_data = strict_single_filter(raw_data);
+% end
 %get valid data only
 valid_data = raw_data(logical(raw_data.valid_tr),:);
 
@@ -82,9 +82,11 @@ for mi = 1:size(model_list,1)
         fprintf('Fitting Subject: %s, Model: %d %d %d %d\n',subject,model)
         [conditions,responses] = get_prepro_data(data,model);
         if fitoptions.use_uni_means % testing JM
-            conditions = get_unimodal_means(conditions,data,model);
+            mean_locs = get_unimodal_means(conditions,data,model);
+            [fit_theta,fit_nll,fit_dist]=fitmodel(mean_locs,responses,model);  
+        else
+            [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model);
         end
-        [fit_theta,fit_nll,fit_dist]=fitmodel(conditions,responses,model);
 
     end
     %if the model structure already has the given model, then overwrite,
