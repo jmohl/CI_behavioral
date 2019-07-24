@@ -37,7 +37,6 @@ elseif ndims(saccades) == 3
     % doesn't seem so simple. Maybe i can do the same thing after
     % normalizing the counts by probability?
     norm_saccades=saccades/sum(saccades(:));
-    norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
     %single saccades will be along the diagonal
     I_mat = logical(eye([length(xlocs),length(xlocs)]));
     sing_sacs = norm_saccades(:,I_mat);
@@ -50,7 +49,12 @@ elseif ndims(saccades) == 3
     sac_bar(3).FaceColor = [.5 .5 1];
     hold on
     if plot_pred
-        projected_pred = (squeeze(sum(norm_predicted,2)) + squeeze(sum(norm_predicted,3))')/2; %divide by 2 to normalize
+        norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
+        norm_pred_sing = norm_predicted(:,I_mat);
+        norm_predicted(:,I_mat) = 0;
+        pred_A = squeeze(sum(norm_predicted,2));
+        pred_V = squeeze(sum(norm_predicted,3));
+        projected_pred = pred_A + pred_V' + norm_pred_sing';
         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
     end
     xlim([-40 40])

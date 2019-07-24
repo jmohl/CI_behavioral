@@ -25,6 +25,9 @@ savefiles = 1;
 %% Plot Schematics - this runs fairly slow because it is doing numerical integration
 % plot_schematics(figpath)
 
+%% plot raw data figures
+ plot_raw_behavior(figpath,savefiles)
+
 %% load model structures.
 subject_m = {'Yoko' 'Juno'};
 subject_h = {'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
@@ -136,7 +139,7 @@ end
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
 model = [1 1 2 1];
-example_conds = [2 5];
+example_conds = 1:20;% [2 5];
 plot_pred = 1;
 %plot for monkey days with pooled model fit
 
