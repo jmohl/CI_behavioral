@@ -44,8 +44,7 @@
 function [nll,prmat] = datalike(conditions,responses,theta,model,eval_midpoints)
 %set up options 
 debug = 0;
-incorporate_unity_lapse = 0; %testing this feature, where the subject might randomly make 1 saccade on their localization trials for instance. Currently don't like.
-lambda_loc = 0; %might remove this in the future as well. Likelihood of making two saccades anywhere is essentially 0, could consider only making it available for 1 saccade lapses. 
+incorporate_unity_lapse = 1; %testing this feature, where the subject might randomly make 1 saccade on their localization trials for instance. Currently don't like.
 
 CI_type = model(1);
 combination_rule = model(2); %rule for combining sensory inputs, based on causal judgement 
@@ -178,7 +177,6 @@ if location_estimate
         V_seg_pdf = bsxfun(@times,likelihood_xV, rs_prior);
         V_seg_pdf = bsxfun(@rdivide,V_seg_pdf,bsxfun(@rdivide,sum(V_seg_pdf,4),sum(likelihood_xV,4)*sum(prior)));
     end
-
 end
 
 if unisensory_loc
@@ -199,15 +197,17 @@ if location_estimate
     switch combination_rule
         case 1 %if bayesian reweighting
             %reweight by posterior
-            if incorporate_unity_lapse
+            if incorporate_unity_lapse %jm todo remove
                 w_unity = c1post*(1-lambda_uni) + lambda_uni/2; %there is the possibility of making a mistake about number of saccades, that will propogate to the location report
+                w_unity_lapse = c1post*(1-lambda_uni);
             else
                 w_unity = c1post;
             end
         case 2 %if model selection, choose the best model and use that one exclusively (set weight on alternative to 0)
             w_unity = zeros(size(c1post));
-            if incorporate_unity_lapse
+            if incorporate_unity_lapse %JM todo remove
                 w_unity(c1post > 0.5) = 1-lambda_uni/2; %there is the possibility of making a mistake about number of saccades, that will propogate to the location report
+                w_unity_lapse(c1post > 0.5) = 1-lambda_uni;
             else
                 w_unity(c1post > 0.5) = 1;
             end
@@ -216,14 +216,32 @@ if location_estimate
         case 4 % probability matching 0 - not actually sure if this is differentiable from reweighting with how I've done the task,
             %todo
     end
-    AV_c1_pdf = bsxfun(@times,w_unity, int_pdf) ; %splitting these because my responses are split between 1 and 2 saccade cases.
-    V_c2_pdf = bsxfun(@times,(1-w_unity),V_seg_pdf);
-    A_c2_pdf = bsxfun(@times,(1-w_unity), A_seg_pdf);
-    
-    %include chance for random choice in saccade, if enabled
-    resp_A_c2 = lambda_loc/numel(A_c2_pdf) + (1-lambda_loc)*(A_c2_pdf);
-    resp_V_c2 = lambda_loc/numel(V_c2_pdf) + (1-lambda_loc)*(V_c2_pdf);
-    resp_AV_c1 = lambda_loc/numel(AV_c1_pdf) + (1-lambda_loc)*AV_c1_pdf;   
+
+    %if option enabled, compensate for the possibility of randomly making 1
+    %saccade by including a scaled projection
+    if incorporate_unity_lapse
+        %c2 pdfs are handled the same, simply scaling down by the
+        %probability of randomly making only a single saccade
+        V_c2_pdf = bsxfun(@times,(1-w_unity), V_seg_pdf);
+        A_c2_pdf = bsxfun(@times,(1-w_unity), A_seg_pdf);
+        %c1 probability is more complicated, because the lapse saccade
+        %could either be taken from the c1, A, or V distributions. Here I
+        %am assuming that the lapses are coming equally from the A and V
+        %distributions.
+        AV_c1_pdf = bsxfun(@times, w_unity_lapse, int_pdf);
+        lapse_c1_pdf = (A_seg_pdf + V_seg_pdf)*lambda_uni/4; 
+        AV_c1_pdf = AV_c1_pdf + lapse_c1_pdf;
+        resp_A_c2 = A_c2_pdf;
+        resp_V_c2 = V_c2_pdf;
+        resp_AV_c1 = AV_c1_pdf;
+    else
+        AV_c1_pdf = bsxfun(@times,w_unity, int_pdf); %splitting these because my responses are split between 1 and 2 saccade cases.
+        V_c2_pdf = bsxfun(@times,(1-w_unity),V_seg_pdf);
+        A_c2_pdf = bsxfun(@times,(1-w_unity), A_seg_pdf);
+        resp_A_c2 = A_c2_pdf;
+        resp_V_c2 = V_c2_pdf;
+        resp_AV_c1 = AV_c1_pdf;
+    end
 end
 
 if unity_judge
@@ -246,8 +264,8 @@ end
 
 if unisensory_loc
     %assume chance for random saccades, but that's it
-    resp_sA = lambda_loc/length(xrange) + (1-lambda_loc)*post_sA;
-    resp_sV = lambda_loc/length(xrange) + (1-lambda_loc)*post_sV;
+    resp_sA = post_sA;
+    resp_sV = post_sV;
 end
 %% (6) Marginalize over internal variables using numerical integration, to get estimates in terms of target locations
 % integrate over xa xv values for every condition in condition vector
@@ -304,6 +322,7 @@ if location_estimate %this is the location estimate when cause is unknown. Not s
     prmat_sac = prmat_AV_c2;
     %add C=1 case to diagonal, producing final cxSvxSa matrix
     prmat_sac(:,diag_array) = prmat_sac(:,diag_array) + squeeze(prmat_AV_c1(:,1,1,:));
+    
 end
 %% (7) calculate negative log likelihood of data under this posterior
 if unisensory_loc

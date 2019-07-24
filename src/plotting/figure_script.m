@@ -23,7 +23,7 @@ set(0,'DefaultFigurePosition',[25,50,800,800])
 savefiles = 1;
 
 %% Plot Schematics - this runs fairly slow because it is doing numerical integration
-plot_schematics(figpath)
+% plot_schematics(figpath)
 
 %% load model structures.
 subject_m = {'Yoko' 'Juno'};
@@ -136,15 +136,15 @@ end
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
 model = [1 1 2 1];
-example_conds = 1:20;%[2 5];
+example_conds = [2 5];
 plot_pred = 1;
-
 %plot for monkey days with pooled model fit
-for ind = 1:1;%length(models_m)
+
+for ind = 1:length(models_m)
     m=models_m{ind};
     subject = m.subject;
     %generate plot for single subject
-     for ind2 = 1:2:19 %for plotting all combos
+     for ind2 = 1:2:length(example_conds) %for plotting all combos
     plot_localization(m,model,example_conds([ind2, ind2+1]),plot_pred);
     set(gcf,'Position',[25,50,1300,500])
     end
@@ -155,22 +155,28 @@ for ind = 1:1;%length(models_m)
 end
 %if given an array of model fits, will average them together and plot that
 
-plot_localization(models_h,model,example_conds,plot_pred);
-set(gcf,'Position',[25,50,1300,500])
+for ind2 = 1:2:length(example_conds)  %for plotting all combos
+    plot_localization(models_h,model,example_conds([ind2, ind2+1]),plot_pred);
+    set(gcf,'Position',[25,50,1300,500])
+end
 if savefiles
     saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'svg');
     saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'png');
 end
 
-plot_localization(models_mj,model,example_conds,plot_pred);
-set(gcf,'Position',[25,50,1300,500])
+for ind2 = 1:2:length(example_conds)  %for plotting all combos
+    plot_localization(models_mj,model,example_conds([ind2, ind2+1]),plot_pred);
+    set(gcf,'Position',[25,50,1300,500])
+end
 if savefiles
     saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'svg');
     saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'png');
 end
 
-plot_localization(models_my,model,example_conds,plot_pred);
-set(gcf,'Position',[25,50,1300,500])
+for ind2 = 1:2:length(example_conds)  %for plotting all combos
+    plot_localization(models_my,model,example_conds([ind2, ind2+1]),plot_pred);
+    set(gcf,'Position',[25,50,1300,500])
+end
 if savefiles
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'svg');
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'png');
@@ -198,7 +204,7 @@ if savefiles
 end
 
 
-%% unimodal localization plot
-example_conds = [2 4];
-plot_localization(models_h,[0 0 4 1],example_conds,plot_pred);
+%% unimodal localization plot, not working yet
+% example_conds = [2 4];
+% plot_localization(models_h,[0 0 4 1],example_conds,plot_pred);
 

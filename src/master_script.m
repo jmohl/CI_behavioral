@@ -17,6 +17,7 @@ cd(local_directory)
 addpath('data','src','src\lautils', 'src\plotting');
 
 subject_list = {'Juno' 'Yoko' 'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
+run_days_separately = 1;
 
 %% Select models to run
 
@@ -34,8 +35,7 @@ model_list = {[0 0 4 1];[1 0 1 1];[1 1 2 1];[1 1 3 1];[2 0 1 1];[1 2 2 1];[1 2 3
 global fitoptions MAXRNG
 MAXRNG = 50;
 fitoptions.binsize = 1; %size of bins used for responses, in degrees.
-fitoptions.load_saved_fits = 0; %load saved fits, if they exist
-% fitoptions.make_plots = 0;
+fitoptions.load_saved_fits = 1; %load saved fits, if they exist
 fitoptions.n_iterations = 1; %set option to repeat fminsearch for n times
 fitoptions.parameter_names = {'A_sig','V_sig','prior_sig','p_common','lambda_uni','lambda_loc','prior_mu'};
 fitoptions.grid_fineness = 3; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 
@@ -46,12 +46,12 @@ fitoptions.eval_midpoints = linspace(-MAXRNG+fitoptions.binsize/2,MAXRNG-fitopti
 fitoptions.cross_validate = 0;
 fitoptions.kfolds = 5;
 
+fitoptions.strict_filter=0; %experimental, only applies to localization component, implemented in get_prepro_data
 fitoptions.use_uni_means= 0; %experimental 7/23/19 all of these have been evaluated and found to not make much of a difference, so will probably exclude for simplicity
-fitoptions.strict_filter=1; %experimental
 fitoptions.dynamic_bins = 0; %experimental
 
 %todo:fix this method for running separate or combined monkey datasets
-run_days_separately = 0;
+
 % if run_days_separately
 %     %this subject list is set to match the dates selected randomly for the
 %     %combined task
@@ -65,9 +65,9 @@ if ~exist('results\modelfits', 'dir')
 end
 
 %% testing subset
- model_list = {[0 0 4 1];[1 0 1 1];[1 1 2 1];};
- subject_list = {'Yoko'};
- 
+%  model_list = {[0 0 4 1];[1 1 2 1];};
+%  subject_list = {'Juno' 'Yoko'};
+%  
  %% run model on all subjects
 for i= 1:length(subject_list)
     subject = subject_list{i};
@@ -90,9 +90,9 @@ for i= 1:length(subject_list)
             subject = days_list{this_day};
             run_subject(subject,raw_data,model_list)
         end
-    else
-        run_subject(subject,raw_data,model_list)
     end
+    %this will run on the combined days as well, after running separately
+    run_subject(subject,raw_data,model_list)
 end
 
 

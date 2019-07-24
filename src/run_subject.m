@@ -22,6 +22,7 @@ global fitoptions
 % if fitoptions.strict_filter 
 %     raw_data = strict_single_filter(raw_data);
 % end
+
 %get valid data only
 valid_data = raw_data(logical(raw_data.valid_tr),:);
 

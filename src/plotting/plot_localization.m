@@ -77,7 +77,11 @@ for this_ex = example_conds
     plot(xrange,norm_A,'--','Color',[1 0 0 .5]);
     plot(xrange,norm_V,'--','Color',[0 0 1 .5]);
 %     text(mean_A,max(norm_A),sprintf('|%2.2f',mean_A))
+if length(m) == 1
+    title(sprintf('A=%d, V=%d, %s',conditions(this_ex,1:2),m.subject));
+else
     title(sprintf('A=%d, V=%d',conditions(this_ex,1:2)));
+end
 %     xlim([-35 10])
     plot_ind = 1 + plot_ind;
 end
