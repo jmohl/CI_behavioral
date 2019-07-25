@@ -197,7 +197,7 @@ if location_estimate
     switch combination_rule
         case 1 %if bayesian reweighting
             %reweight by posterior
-            if incorporate_unity_lapse %jm todo remove
+            if incorporate_unity_lapse
                 w_unity = c1post*(1-lambda_uni) + lambda_uni/2; %there is the possibility of making a mistake about number of saccades, that will propogate to the location report
                 w_unity_lapse = c1post*(1-lambda_uni);
             else
@@ -205,7 +205,8 @@ if location_estimate
             end
         case 2 %if model selection, choose the best model and use that one exclusively (set weight on alternative to 0)
             w_unity = zeros(size(c1post));
-            if incorporate_unity_lapse %JM todo remove
+            w_unity_lapse = zeros(size(c1post));
+            if incorporate_unity_lapse 
                 w_unity(c1post > 0.5) = 1-lambda_uni/2; %there is the possibility of making a mistake about number of saccades, that will propogate to the location report
                 w_unity_lapse(c1post > 0.5) = 1-lambda_uni;
             else
@@ -219,7 +220,7 @@ if location_estimate
 
     %if option enabled, compensate for the possibility of randomly making 1
     %saccade by including a scaled projection
-    if incorporate_unity_lapse
+    if incorporate_unity_lapse && combination_rule ~= 3
         %c2 pdfs are handled the same, simply scaling down by the
         %probability of randomly making only a single saccade
         V_c2_pdf = bsxfun(@times,(1-w_unity), V_seg_pdf);

@@ -50,22 +50,12 @@ fitoptions.strict_filter=0; %experimental, only applies to localization componen
 fitoptions.use_uni_means= 0; %experimental 7/23/19 all of these have been evaluated and found to not make much of a difference, so will probably exclude for simplicity
 fitoptions.dynamic_bins = 0; %experimental
 
-%todo:fix this method for running separate or combined monkey datasets
-
-% if run_days_separately
-%     %this subject list is set to match the dates selected randomly for the
-%     %combined task
-%     subject_list =  {'Juno_AVD2_2017_07_20_2' 'Juno_AVD2_2017_07_26' 'Juno_AVD2_2017_08_02' 'Juno_AVD2_2017_09_06' 'Juno_AVD2_2017_12_13' ...
-%      'Juno_AVD2_2018_01_23' 'Juno_AVD2_2018_02_27' 'Juno_AVD2_2018_04_05' 'Juno_AVD2_2018_04_09' 'Juno_AVD2_2018_04_10' ...
-%     'Yoko_AVD2_2018_11_29' 'Yoko_AVD2_2019_01_09' 'Yoko_AVD2_2019_01_10' 'Yoko_AVD2_2019_01_30' 'Yoko_AVD2_2019_03_07' ...
-%     'Yoko_AVD2_2019_03_12' 'Yoko_AVD2_2019_03_19' 'Yoko_AVD2_2019_04_03' 'Yoko_AVD2_2019_04_17' 'Yoko_AVD2_2019_04_24'};
-% end
 if ~exist('results\modelfits', 'dir')
     mkdir('results\modelfits')
 end
 
 %% testing subset
-%  model_list = {[0 0 4 1];[1 1 2 1];};
+%  model_list = {[1 3 2 1];[0 0 4 1];[1 1 2 1];};
 %  subject_list = {'Juno' 'Yoko'};
 %  
  %% run model on all subjects
@@ -81,7 +71,9 @@ for i= 1:length(subject_list)
         load(this_file.name);
         raw_data = tidy_data;
     end
-    %TODO: fix this deadline inspired hack
+    run_subject(subject,raw_data,model_list)
+    % if want to run the monkey days separately, for better direct
+    % comparison with humans
     if run_days_separately
         comb_data = raw_data;
         days_list = unique(raw_data.file_ID);
@@ -91,8 +83,6 @@ for i= 1:length(subject_list)
             run_subject(subject,raw_data,model_list)
         end
     end
-    %this will run on the combined days as well, after running separately
-    run_subject(subject,raw_data,model_list)
 end
 
 

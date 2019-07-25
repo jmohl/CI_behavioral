@@ -57,11 +57,11 @@ mean_V = splitapply(@mean,V_sac,gV);
 std_A = splitapply(@std,A_sac,gA);
 std_V = splitapply(@std,V_sac,gV);
 
-subplot(2,2,1:2)
-errorbar(glabA+jitter,mean_A,std_A,'Color','r','LineWidth',2)
+subplot(1,3,1)
+errorbar(glabA+jitter,mean_A,std_A,'Color','r','LineWidth',1)
 grid on
 hold on
-errorbar(glabV-jitter,mean_V,std_V,'Color','b','LineWidth',2)
+errorbar(glabV-jitter,mean_V,std_V,'Color','b','LineWidth',1)
 labels = [-24 -18 -12 -6 0 6 12 18 24];
 xticks(labels)
 xticklabels(labels)
@@ -71,12 +71,13 @@ xlim([-30 30])
 ylim([-30 30])
 ylabel('Saccade endpoint')
 xlabel('Target Location')
+legend('Auditory trials','Visual trials','Location','Best')
 title(sprintf('Accuracy of single target saccades: %s',subject_id{ind}),'Interpreter','none')
 
 %% plot 2, saccade eye traces for an example AV condition with two saccades
 ex_tars = [-24, 12];
 AV_ex_data = this_data(this_data.A_tar == ex_tars(1) & this_data.V_tar == ex_tars(2),:);
-subplot(2,2,3)
+subplot(1,3,2)
 %if the number of trials is really large, need to subsample down to a
 %manageable number
 if height(AV_ex_data) > 30
@@ -95,7 +96,7 @@ for tr = 1:height(AV_ex_data)
     eyedata = eyedata(AV_ex_data(tr,:).go_time/2:AV_ex_data(tr,:).end_time/2,:); %divide by 2 to make in eye time
     eyedata = eyedata(1:subsamp:end,:);
     plot(eyedata(:,1),eyedata(:,2),'Color',[.75 .75 .75],'LineWidth',.2)
-    plot(eyedata(:,1),eyedata(:,2),'ko','MarkerSize',.2)
+    plot(eyedata(:,1),eyedata(:,2),'k.','MarkerSize',.05)
 end
 title('Double target saccades')
 xlabel('Horizontal eye position (deg)')
@@ -114,7 +115,7 @@ ylim([-30,30])
 AV_sac_A = vertcat(AV_ex_data.A_endpoints{:});
 AV_sac_V = vertcat(AV_ex_data.V_endpoints{:});
 
-subplot(2,2,4)
+subplot(1,3,3)
 hold on
 histogram(AV_sac_V(:,1),-30:30,'Normalization','Probability')
 histogram(AV_sac_A(:,1),-30:30,'Normalization','Probability')
@@ -124,6 +125,7 @@ ylabel('p in bin')
 
 
 %% save out figure
+set(gcf,'Position',[25,50,1400,350])
 if savefiles
     saveas(gcf,sprintf('%s\\%s_rawdata',figpath,subject_id{ind}),'svg');
     saveas(gcf,sprintf('%s\\%s_rawdata',figpath,subject_id{ind}),'png');
