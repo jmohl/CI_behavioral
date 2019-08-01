@@ -28,9 +28,19 @@ data_y1 = data_y1.tidy_data;
 
 data_H08 = load('data\H08_AVD2_2018_08_10_tidy.mat');
 data_H08 = data_H08.tidy_data;
+
+%combine human datasets
+files_H = dir('data\*H*');
+data_H = {};
+for ind = 1:length(files_H)
+    fname = files_H(ind).name;
+    this_data = load(sprintf('data\\%s',fname));
+    data_H = vertcat(data_H,this_data.tidy_data);
+end
+
 %rotate through subjects for each plots
-subjects = {data_j,data_y,data_j1,data_y1,data_H08};
-subject_id = {'Juno','Yoko','Juno1day','Yoko1day','H08'};
+subjects = {data_j,data_y,data_H,data_j1,data_y1,data_H08};
+subject_id = {'Juno','Yoko','H','Juno1day','Yoko1day','H08'};
 
 %% run all plots on all subjects
 for ind = 1:length(subjects)
@@ -75,12 +85,17 @@ legend('Auditory trials','Visual trials','Location','Best')
 title(sprintf('Accuracy of single target saccades: %s',subject_id{ind}),'Interpreter','none')
 
 %% plot 2, saccade eye traces for an example AV condition with two saccades
-ex_tars = [-24, 12];
+if strfind(subject_id{ind},'H')
+    ex_tars = [12, -12];
+else
+    ex_tars = [6, -12];
+end
 AV_ex_data = this_data(this_data.A_tar == ex_tars(1) & this_data.V_tar == ex_tars(2),:);
 subplot(1,3,2)
 %if the number of trials is really large, need to subsample down to a
 %manageable number
 if height(AV_ex_data) > 30
+    rng('default')
     AV_ex_data = AV_ex_data(randsample(height(AV_ex_data),30),:);
 end
 

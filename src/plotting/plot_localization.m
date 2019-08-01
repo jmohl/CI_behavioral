@@ -82,7 +82,7 @@ if length(m) == 1
 else
     title(sprintf('A=%d, V=%d',conditions(this_ex,1:2)));
 end
-%     xlim([-35 10])
+     xlim([-25 25])
     plot_ind = 1 + plot_ind;
 end
 if plot_pred

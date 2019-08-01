@@ -23,7 +23,7 @@ set(0,'DefaultFigurePosition',[25,50,800,800])
 savefiles = 1;
 
 %% Plot Schematics - this runs fairly slow because it is doing numerical integration
-% plot_schematics(figpath)
+ plot_schematics(figpath)
 
 %% plot raw data figures
  plot_raw_behavior(figpath,savefiles)
@@ -139,27 +139,28 @@ end
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
 model = [1 1 2 1];
-example_conds = 1:20;% [2 5];
+example_conds_h = [11 13];
+example_conds_m = [11 12];
 plot_pred = 1;
 %plot for monkey days with pooled model fit
 
-for ind = 1:length(models_m)
-    m=models_m{ind};
-    subject = m.subject;
-    %generate plot for single subject
-     for ind2 = 1:2:length(example_conds) %for plotting all combos
-    plot_localization(m,model,example_conds([ind2, ind2+1]),plot_pred);
-    set(gcf,'Position',[25,50,1300,500])
-    end
-    if savefiles
-        saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'svg');
-        saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'png');
-    end
-end
+% for ind = 1:length(models_m)
+%     m=models_m{ind};
+%     subject = m.subject;
+%     %generate plot for single subject
+%      for ind2 = 1:2:length(example_conds) %for plotting all combos
+%     plot_localization(m,model,example_conds([ind2, ind2+1]),plot_pred);
+%     set(gcf,'Position',[25,50,1300,500])
+%     end
+%     if savefiles
+%         saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'svg');
+%         saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'png');
+%     end
+% end
 %if given an array of model fits, will average them together and plot that
 
-for ind2 = 1:2:length(example_conds)  %for plotting all combos
-    plot_localization(models_h,model,example_conds([ind2, ind2+1]),plot_pred);
+for ind2 = 1:2:length(example_conds_h)  %for plotting all combos
+    plot_localization(models_h,model,example_conds_h([ind2, ind2+1]),plot_pred);
     set(gcf,'Position',[25,50,1300,500])
 end
 if savefiles
@@ -167,8 +168,8 @@ if savefiles
     saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'png');
 end
 
-for ind2 = 1:2:length(example_conds)  %for plotting all combos
-    plot_localization(models_mj,model,example_conds([ind2, ind2+1]),plot_pred);
+for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
+    plot_localization(models_mj,model,example_conds_m([ind2, ind2+1]),plot_pred);
     set(gcf,'Position',[25,50,1300,500])
 end
 if savefiles
@@ -176,8 +177,8 @@ if savefiles
     saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'png');
 end
 
-for ind2 = 1:2:length(example_conds)  %for plotting all combos
-    plot_localization(models_my,model,example_conds([ind2, ind2+1]),plot_pred);
+for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
+    plot_localization(models_my,model,example_conds_m([ind2, ind2+1]),plot_pred);
     set(gcf,'Position',[25,50,1300,500])
 end
 if savefiles
@@ -192,18 +193,21 @@ plot_condensed_loc(models_mj,model,true_loc);
 title('Juno')
 if savefiles
     saveas(gcf,sprintf('%s\\juno_condensed_bias',figpath),'png');
+    saveas(gcf,sprintf('%s\\juno_condensed_bias',figpath),'svg');
 end
 
 plot_condensed_loc(models_my,model,true_loc);
 title('Yoko')
 if savefiles
     saveas(gcf,sprintf('%s\\yoko_condensed_bias',figpath),'png');
+    saveas(gcf,sprintf('%s\\yoko_condensed_bias',figpath),'svg');
 end
 
 plot_condensed_loc(models_h,model,true_loc);
 title('Human')
 if savefiles
     saveas(gcf,sprintf('%s\\HU_condensed_bias',figpath),'png');
+    saveas(gcf,sprintf('%s\\HU_condensed_bias',figpath),'svg');
 end
 
 
