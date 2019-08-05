@@ -64,7 +64,7 @@ for mi = 1:size(model_list,1)
     if fitoptions.cross_validate % if using cross validation
         fit_theta = cell(fitoptions.kfolds,1);
         fit_dist = cell(fitoptions.kfolds,1);
-        test_nll = cell(fitoptions.kfolds,1);
+        fit_nll = cell(fitoptions.kfolds,1);
         model = model_list{mi};
         
         for ki = 1:fitoptions.kfolds
@@ -74,7 +74,7 @@ for mi = 1:size(model_list,1)
             [conditions,responses] = get_prepro_data(train_data,model);
             [fit_theta{ki},~,fit_dist{ki}]=fitmodel(conditions,responses,model);
             [conditions,responses] = get_prepro_data(test_data,model);
-            test_nll{ki} = datalike(conditions,responses,fit_theta{ki},model,fitoptions.eval_midpoints);
+            fit_nll{ki} = datalike(conditions,responses,fit_theta{ki},model,fitoptions.eval_midpoints);
         end
          %for conditions and responses (used for plotting), return whole dataset
             [conditions,responses] = get_prepro_data(data,model);

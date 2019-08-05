@@ -37,13 +37,13 @@ MAXRNG = 50;
 fitoptions.binsize = 1; %size of bins used for responses, in degrees.
 fitoptions.load_saved_fits = 1; %load saved fits, if they exist
 fitoptions.n_iterations = 1; %set option to repeat fminsearch for n times
-fitoptions.parameter_names = {'A_sig','V_sig','prior_sig','p_common','lambda_uni','lambda_loc','prior_mu'};
+fitoptions.parameter_names = {'A_sig','V_sig','prior_sig','p_common','lambda_uni','prior_mu'};
 fitoptions.grid_fineness = 3; %number of points per parameter in grid search, remember n points in grid = grid_fineness^n_params;; 
 fitoptions.fmin_options = optimset('MaxFunEvals',10000,'MaxIter',10000, 'TolFun', 1e-2, 'TolX',1e-2);
 fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/fitoptions.binsize + 1);
 fitoptions.eval_midpoints = linspace(-MAXRNG+fitoptions.binsize/2,MAXRNG-fitoptions.binsize/2,length(fitoptions.eval_range)-1);
 
-fitoptions.cross_validate = 0;
+fitoptions.cross_validate = 1;
 fitoptions.kfolds = 5;
 
 fitoptions.strict_filter=0; %experimental, only applies to localization component, implemented in get_prepro_data

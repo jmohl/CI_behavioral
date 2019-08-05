@@ -22,7 +22,7 @@ rand_days = randsample(length(data_dir),length(data_dir));
 data = [];
 i=1;
 j=1;
-while i<n_pooled_days
+while i<=n_pooled_days
     load(data_dir(rand_days(j)).name); %will be named tidy_data
     j=j+1;
     if exist('this_tidy')

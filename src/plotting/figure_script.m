@@ -25,10 +25,10 @@ savefiles = 1;
 %% Plot Schematics - this runs fairly slow because it is doing numerical integration
  plot_schematics(figpath)
 
-%% plot raw data figures
+%% plot raw data figures - uses raw tidy_data
  plot_raw_behavior(figpath,savefiles)
 
-%% load model structures.
+%% load model structures - subsequent plots all rely on fit model results
 subject_m = {'Yoko' 'Juno'};
 subject_h = {'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
 
@@ -76,6 +76,8 @@ for subject = subject_h
 end
 
 %% unity judgement plots
+%TODO: 1: use joint model fit 2: update to work with cross validated?
+
 % Set demo models to use
 % model(1) = CI type: none(0), Bayes (1) or probabilistic fusion (2)
 % model(2) = stimulus fusion: none(0), Bayes reweight(1), model selection(2), probabilistic fusion (3)
@@ -215,3 +217,37 @@ end
 % example_conds = [2 4];
 % plot_localization(models_h,[0 0 4 1],example_conds,plot_pred);
 
+%% AIC BIC table
+%which models to compare
+models = {[1 1 3 1];[1 2 3 1];[1 3 3 1]}; %Bayes, model selection, probabilistic fusion (null) 
+%comparing models on the localization component only, as the 
+n_params = [5, 5, 5];
+
+[AIC_mj,BIC_mj] = get_model_comp_table(models_mj,models,n_params);
+[AIC_my,BIC_my] = get_model_comp_table(models_my,models,n_params);
+[AIC_h,BIC_h] = get_model_comp_table(models_h,models,n_params);
+
+%get relative to non-CI model (probabilistic fusion)
+AIC_mj_rel = AIC_mj - AIC_mj(:,3);
+AIC_my_rel = AIC_my - AIC_my(:,3);
+AIC_h_rel = AIC_h - AIC_h(:,3);
+
+BIC_mj_rel = BIC_mj - BIC_mj(:,3);
+BIC_my_rel = BIC_my - BIC_my(:,3);
+BIC_h_rel = BIC_h - BIC_h(:,3);
+
+%get means + std for all
+%rows are [monkey_j;monkey_y;humans]
+%columns are [models 1:3]
+AIC_mean = [mean(AIC_mj_rel,1);mean(AIC_my_rel,1);mean(AIC_h_rel,1)];
+AIC_sem = [std(AIC_mj_rel,1)/sqrt(length(models_mj));std(AIC_my_rel,1)/sqrt(length(models_my));std(AIC_h_rel,1)/sqrt(length(models_h))];
+BIC_mean = [mean(BIC_mj_rel,1);mean(BIC_my_rel,1);mean(BIC_h_rel,1)];
+BIC_sem = [std(BIC_mj_rel,1)/sqrt(length(models_mj));std(BIC_my_rel,1)/sqrt(length(models_my));std(BIC_h_rel,1)/sqrt(length(models_h))];
+
+for ind = 1:length(models)
+model_names{ind} = get_model_names(models{ind});
+end
+model_comp_AIC = array2table(AIC_mean],'RowNames',{'mj','my','h'},'VariableNames',horzcat(model_names{:}))
+model_comp_BIC = array2table(BIC_mean],'RowNames',{'mj','my','h'},'VariableNames',horzcat(model_names{:}))
+
+    
