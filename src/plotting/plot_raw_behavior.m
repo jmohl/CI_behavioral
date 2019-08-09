@@ -20,14 +20,17 @@ data_j = data_j.tidy_data;
 data_y = load('data\Yoko_combined.mat');
 data_y = data_y.tidy_data;
 
-data_j1 = load('data\Juno_AVD2_2018_01_05_tidy.mat');
+data_j1 = load('data\Juno_AVD2_2018_04_11_tidy.mat');
 data_j1 = data_j1.tidy_data;
 
-data_y1 = load('data\Yoko_AVD2_2019_03_27_tidy.mat');
+data_y1 = load('data\Yoko_AVD2_2019_04_17_tidy.mat'); %4_17, 4_25 good examples but have non-0 fix
 data_y1 = data_y1.tidy_data;
 
-data_H08 = load('data\H08_AVD2_2018_08_10_tidy.mat');
-data_H08 = data_H08.tidy_data;
+ data_H1 = load('data\H08_AVD2_2018_08_10_tidy.mat');
+ data_H1 = data_H1.tidy_data;
+% data_H1 = load('data\H07_AVD2_2018_08_09_tidy.mat');
+% data_H1 = data_H1.tidy_data;
+
 
 %combine human datasets
 files_H = dir('data\*H*');
@@ -39,8 +42,12 @@ for ind = 1:length(files_H)
 end
 
 %rotate through subjects for each plots
-subjects = {data_j,data_y,data_H,data_j1,data_y1,data_H08};
-subject_id = {'Juno','Yoko','H','Juno1day','Yoko1day','H08'};
+ subjects = {data_j,data_y,data_H,data_j1,data_y1,data_H1};
+ subject_id = {'Juno','Yoko','H','Juno1day','Yoko1day','H07'};
+%  subjects = {data_j1,data_y1,data_H1};
+%  subject_id = {'Juno1day','Yoko1day','H07'};
+% subjects = {data_H1};
+% subject_id = {'H07'};
 horz_only = 0; %option to plot horizontal component of eye trace over time
 
 %% run all plots on all subjects
@@ -135,7 +142,7 @@ for ind = 1:length(subjects)
             %only get eye data between go cue and end
             eyedata = eyedata(AV_ex_data(tr,:).go_time/2:AV_ex_data(tr,:).end_time/2,:); %divide by 2 to make in eye time
             eyedata = eyedata(1:subsamp:end,:);
-            plot(eyedata(:,1),eyedata(:,2),'Color',[.75 .75 .75],'LineWidth',.2)
+            %             plot(eyedata(:,1),eyedata(:,2),'Color',[.75 .75 .75],'LineWidth',.2)
             plot(eyedata(:,1),eyedata(:,2),'k.','MarkerSize',.05)
         end
         title('Double target saccades')
@@ -152,21 +159,54 @@ for ind = 1:length(subjects)
     % This is essentially copying plot_localization but I am working with the
     % data in a different format. Probably worth considering just using
     % plot_localization instead so that it exactly matches
+    A_ex_data = A_data(A_data.A_tar == ex_tars(1),:);
+    V_ex_data = V_data(V_data.V_tar == ex_tars(2),:);
+
+    A_sac = vertcat(A_ex_data.valid_endpoints{:});
+    V_sac = vertcat(V_ex_data.valid_endpoints{:});
+%     xrange = -50:50;
+%     A_sac_norm = histcounts(A_sac(:,1),xrange)/length(A_sac(:,1));
+%     V_sac_norm = histcounts(V_sac(:,1),xrange)/length(V_sac(:,1));
+    mean_A = mean(A_sac(:,1));
+    mean_V = mean(V_sac(:,1));
+
     AV_sac_A = vertcat(AV_ex_data.A_endpoints{:});
     AV_sac_V = vertcat(AV_ex_data.V_endpoints{:});
-    
+    AV_mean_A = mean(AV_sac_A(:,1));
+    AV_mean_V = mean(AV_sac_V(:,1));
+       
     subplot(1,3,3)
     hold on
-
+    
     histogram(AV_sac_V(:,1),-30:30,'Normalization','Probability')
     histogram(AV_sac_A(:,1),-30:30,'Normalization','Probability')
+    %plot unimodal dist
+%     plot(-49.5:49.5,A_sac_norm,'--','Color',[1 0 0 .5]);
+%     plot(-49.5:49.5,V_sac_norm,'--','Color',[0 0 1 .5]);
     ref_tar_A = plot([ex_tars(1), ex_tars(1)],[0,.35],'--r','LineWidth',2);
     ref_tar_V = plot([ex_tars(2), ex_tars(2)],[0,.35],'--b','LineWidth',2);
+    % plot unimodal mean triangle
+    max_p = .25;
+    plot(mean_A,max_p,'rv','MarkerSize',10)
+    plot(mean_V,max_p,'bv','MarkerSize',10)
+    plot(AV_mean_A,max_p,'rv','MarkerSize',10,'MarkerFaceColor','r')
+    plot(AV_mean_V,max_p,'bv','MarkerSize',10,'MarkerFaceColor','b')
+    
+    % do ttest between the two distributions
+    [HA,pA] = ttest(AV_sac_A(:,1)-mean_A);
+    [HV,pV] = ttest(AV_sac_V(:,1)-mean_V);
+    if HA
+        text(mean_A,max_p+.02,sprintf('%0.3f',pA))
+    end
+    if HV
+        text(mean_V,max_p+.02,sprintf('%0.3f',pV))
+    end    
+%     
     title('Saccade endpoints')
     xlabel('Horizontal eye position (deg)')
     ylabel('p in bin')
     legend('Labeled Auditory', 'Labeled Visual','A target','V target')
-
+    
     
     %% save out figure
     set(gcf,'Position',[25,50,1400,350])

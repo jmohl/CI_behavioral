@@ -83,7 +83,7 @@ end
 % model(2) = stimulus fusion: none(0), Bayes reweight(1), model selection(2), probabilistic fusion (3)
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
-model = [1 0 1 1];
+model = [1 1 3 1];
 
 % plot individually for monkeys
 for ind = 1:length(models_m)
@@ -114,7 +114,6 @@ if savefiles
     saveas(gcf,sprintf('%s\\human_unity',figpath),'png');
 end
 
-
 %plot combined for yoko
 figure
 plot_unity_combined(models_my,model)
@@ -140,7 +139,7 @@ end
 % model(2) = stimulus fusion: none(0), Bayes reweight(1), model selection(2), probabilistic fusion (3)
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
-model = [1 1 2 1];
+model = [1 1 3 1];
 example_conds_h = [11 13];
 example_conds_m = [11 12];
 plot_pred = 1;
@@ -189,7 +188,7 @@ if savefiles
 end
 %% Condensed localization plot
 
-model = [1 1 2 1];
+model = [1 1 3 1];
 true_loc = 0; %option to use true target locations or relative locations (from unimodal saccades) for specifying bias.
 plot_condensed_loc(models_mj,model,true_loc);
 title('Juno')
@@ -223,9 +222,9 @@ models = {[1 1 3 1];[1 2 3 1];[1 3 3 1]}; %Bayes, model selection, probabilistic
 %comparing models on the localization component only, as the 
 n_params = [5, 5, 5];
 
+[AIC_h,BIC_h] = get_model_comp_table(models_h,models,n_params);
 [AIC_mj,BIC_mj] = get_model_comp_table(models_mj,models,n_params);
 [AIC_my,BIC_my] = get_model_comp_table(models_my,models,n_params);
-[AIC_h,BIC_h] = get_model_comp_table(models_h,models,n_params);
 
 %get relative to non-CI model (probabilistic fusion)
 AIC_mj_rel = AIC_mj - AIC_mj(:,3);
@@ -237,17 +236,84 @@ BIC_my_rel = BIC_my - BIC_my(:,3);
 BIC_h_rel = BIC_h - BIC_h(:,3);
 
 %get means + std for all
-%rows are [monkey_j;monkey_y;humans]
+%rows are [humans;monkey_j;monkey_y]
 %columns are [models 1:3]
-AIC_mean = [mean(AIC_mj_rel,1);mean(AIC_my_rel,1);mean(AIC_h_rel,1)];
-AIC_sem = [std(AIC_mj_rel,1)/sqrt(length(models_mj));std(AIC_my_rel,1)/sqrt(length(models_my));std(AIC_h_rel,1)/sqrt(length(models_h))];
-BIC_mean = [mean(BIC_mj_rel,1);mean(BIC_my_rel,1);mean(BIC_h_rel,1)];
-BIC_sem = [std(BIC_mj_rel,1)/sqrt(length(models_mj));std(BIC_my_rel,1)/sqrt(length(models_my));std(BIC_h_rel,1)/sqrt(length(models_h))];
+AIC_mean = [mean(AIC_h_rel,1);mean(AIC_mj_rel,1);mean(AIC_my_rel,1);];
+AIC_sem = [std(AIC_h_rel,1)/sqrt(length(models_h));std(AIC_mj_rel,1)/sqrt(length(models_mj));std(AIC_my_rel,1)/sqrt(length(models_my));];
+BIC_mean = [mean(BIC_h_rel,1);mean(BIC_mj_rel,1);mean(BIC_my_rel,1);];
+BIC_sem = [std(BIC_h_rel,1)/sqrt(length(models_h));std(BIC_mj_rel,1)/sqrt(length(models_mj));std(BIC_my_rel,1)/sqrt(length(models_my));];
 
 for ind = 1:length(models)
 model_names{ind} = get_model_names(models{ind});
 end
-model_comp_AIC = array2table(AIC_mean],'RowNames',{'mj','my','h'},'VariableNames',horzcat(model_names{:}))
-model_comp_BIC = array2table(BIC_mean],'RowNames',{'mj','my','h'},'VariableNames',horzcat(model_names{:}))
+model_comp_AIC = array2table(AIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
+model_comp_BIC = array2table(BIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
 
     
+%% BIC figure
+
+figure
+subj_bars = barh(BIC_mean(:,1:2));
+subj_bars(1).FaceColor = [.5 .5 .5];
+subj_bars(2).FaceColor = [0 0 0];
+
+yticklabels({'h','mj','my'});
+hold on
+errorbar(BIC_mean(:,1:2),[.86 1.14;1.86 2.14;2.86 3.14],BIC_sem(:,1:2),'k.','horizontal')
+
+%add individual subjects?
+scatter(reshape(BIC_h_rel(:,1:2),1,[]),reshape(repmat([.86 1.14],7,1),1,[]),[],[1:7,1:7],'filled');
+scatter(reshape(BIC_mj_rel(:,1:2),1,[]),reshape(repmat([1.86 2.14],10,1),1,[]),[],[1:10,1:10],'filled');
+scatter(reshape(BIC_my_rel(:,1:2),1,[]),reshape(repmat([2.86 3.14],10,1),1,[]),[],[1:10,1:10],'filled');
+
+legend(subj_bars,horzcat(model_names{1:2}),'Interpreter','none')
+ylabel('Subjects')
+xlabel('Delta BIC')
+if savefiles
+    saveas(gcf,sprintf('%s\\deltaBIC',figpath),'png');
+    saveas(gcf,sprintf('%s\\deltaBIC',figpath),'svg');
+end
+
+
+
+
+
+%% if want to compare between models of CI
+
+%get relative to heuristic model
+BIC_mj_rel = BIC_mj - BIC_mj(:,2);
+BIC_my_rel = BIC_my - BIC_my(:,2);
+BIC_h_rel = BIC_h - BIC_h(:,2);
+
+%get means + std for all
+%rows are [humans;monkey_j;monkey_y]
+%columns are [models 1:3]
+BIC_mean = [mean(BIC_h_rel,1);mean(BIC_mj_rel,1);mean(BIC_my_rel,1);];
+BIC_sem = [std(BIC_h_rel,1)/sqrt(length(models_h));std(BIC_mj_rel,1)/sqrt(length(models_mj));std(BIC_my_rel,1)/sqrt(length(models_my));];
+model_comp_BIC = array2table(BIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
+
+    
+mean(BIC_mean)
+mean(BIC_sem)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

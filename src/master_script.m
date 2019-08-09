@@ -43,7 +43,7 @@ fitoptions.fmin_options = optimset('MaxFunEvals',10000,'MaxIter',10000, 'TolFun'
 fitoptions.eval_range = linspace(-MAXRNG,MAXRNG,MAXRNG*2/fitoptions.binsize + 1);
 fitoptions.eval_midpoints = linspace(-MAXRNG+fitoptions.binsize/2,MAXRNG-fitoptions.binsize/2,length(fitoptions.eval_range)-1);
 
-fitoptions.cross_validate = 1;
+fitoptions.cross_validate = 0;
 fitoptions.kfolds = 5;
 
 fitoptions.strict_filter=0; %experimental, only applies to localization component, implemented in get_prepro_data

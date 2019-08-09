@@ -41,7 +41,7 @@ subj_mean = mean(mean_resp,2);
 subj_sem = std(mean_resp,1,2)/sqrt(length(model_array));
 model_mean = mean(mean_fit,2);
 l1 = errorbar(avlabels,subj_mean,subj_sem,'k','LineWidth',2);
-l2 = plot(avlabels,model_mean,'g','LineWidth',2);
+l2 = plot(avlabels,model_mean,'k--','LineWidth',2);
 
 hold off
 legend([l1 l2],'Mean Response','Model predicted')
