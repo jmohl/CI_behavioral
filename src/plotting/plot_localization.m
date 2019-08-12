@@ -12,6 +12,8 @@
 % different
 % 
 function plot_localization(m,model,example_conds,plot_pred)
+global aud_color vis_color
+
 if length(m) > 1
    % pool data across model structures if provided with multiple 
    % otherwise, get data from single model structure
@@ -74,8 +76,8 @@ for this_ex = example_conds
     % get mean values
     mean_A = sum(norm_A.*xrange,2)./sum(norm_A,2);
     
-    plot(xrange,norm_A,'--','Color',[1 0 0 .5]);
-    plot(xrange,norm_V,'--','Color',[0 0 1 .5]);
+    plot(xrange,norm_A,'--','Color',aud_color);
+    plot(xrange,norm_V,'--','Color',vis_color);
 %     text(mean_A,max(norm_A),sprintf('|%2.2f',mean_A))
 if length(m) == 1
     title(sprintf('A=%d, V=%d, %s',conditions(this_ex,1:2),m.subject));

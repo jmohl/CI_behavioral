@@ -14,6 +14,9 @@
 % 3: saccade histograms for the same condition, maybe one each for
 % integrated/segregated
 function plot_raw_behavior(figpath,savefiles)
+global aud_color vis_color
+
+
 data_j = load('data\Juno_combined.mat');
 data_j = data_j.tidy_data;
 
@@ -76,10 +79,10 @@ for ind = 1:length(subjects)
     std_V = splitapply(@std,V_sac,gV);
     
     subplot(1,3,1)
-    errorbar(glabA+jitter,mean_A,std_A,'Color','r','LineWidth',1)
+    errorbar(glabA+jitter,mean_A,std_A,'Color',aud_color,'LineWidth',1)
     grid on
     hold on
-    errorbar(glabV-jitter,mean_V,std_V,'Color','b','LineWidth',1)
+    errorbar(glabV-jitter,mean_V,std_V,'Color',vis_color,'LineWidth',1)
     labels = [-24 -18 -12 -6 0 6 12 18 24];
     xticks(labels)
     xticklabels(labels)
@@ -183,8 +186,8 @@ for ind = 1:length(subjects)
     %plot unimodal dist
 %     plot(-49.5:49.5,A_sac_norm,'--','Color',[1 0 0 .5]);
 %     plot(-49.5:49.5,V_sac_norm,'--','Color',[0 0 1 .5]);
-    ref_tar_A = plot([ex_tars(1), ex_tars(1)],[0,.35],'--r','LineWidth',2);
-    ref_tar_V = plot([ex_tars(2), ex_tars(2)],[0,.35],'--b','LineWidth',2);
+    ref_tar_A = plot([ex_tars(1), ex_tars(1)],[0,.35],'--','color',aud_color,'LineWidth',2);
+    ref_tar_V = plot([ex_tars(2), ex_tars(2)],[0,.35],'--','color',vis_color,'LineWidth',2);
     % plot unimodal mean triangle
     max_p = .25;
     plot(mean_A,max_p,'rv','MarkerSize',10)

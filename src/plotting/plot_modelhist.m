@@ -12,6 +12,7 @@
 %
 
 function plot_modelhist(saccades,predicted,xlocs, plot_pred)
+global model_color aud_color vis_color
 
 if ndims(saccades) == 2 %format for location estimation when all saccades are put together
     norm_saccades=saccades/sum(saccades);
@@ -45,8 +46,8 @@ elseif ndims(saccades) == 3
     V_sacs = sum(norm_saccades,3); %JTM 7/18/19 made change here, removed division by 2
     sac_bar = bar(xlocs,[sing_sacs(:),A_sacs(:),V_sacs(:)],'stacked');%normalizing to probability
     sac_bar(1).FaceColor = [.2 .2 .2];
-    sac_bar(2).FaceColor = [1 .5 .5];
-    sac_bar(3).FaceColor = [.5 .5 1];
+    sac_bar(2).FaceColor = aud_color;
+    sac_bar(3).FaceColor = cis_color;
     hold on
     if plot_pred
         norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
@@ -55,7 +56,7 @@ elseif ndims(saccades) == 3
         pred_A = squeeze(sum(norm_predicted,2));
         pred_V = squeeze(sum(norm_predicted,3));
         projected_pred = pred_A + pred_V' + norm_pred_sing';
-        plot(xlocs,projected_pred,'LineWidth',1.5,'Color',[.5 .5 .5]); %scaling by bin width so that the probability is matched correctly
+        plot(xlocs,projected_pred,'LineWidth',1.5,'Color',model_color); %scaling by bin width so that the probability is matched correctly
     end
     xlim([-40 40])
     xlabel('endpoint location (degrees)');

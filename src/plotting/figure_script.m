@@ -20,6 +20,12 @@ set(0, 'DefaultLineLineWidth', 2);
 set(0, 'DefaultLineMarkerSize', 7);
 set(0,'DefaultFigurePosition',[25,50,800,800])
 
+%selecting some nice colors for plotting, consistent across all
+global model_color aud_color vis_color
+model_color = [35/256,155/256,86/256];
+aud_color = [192/256, 57/256, 43/256];
+vis_color = [52/256, 152/256, 219/256];
+
 savefiles = 1;
 
 %% Plot Schematics - this runs fairly slow because it is doing numerical integration
@@ -76,7 +82,6 @@ for subject = subject_h
 end
 
 %% unity judgement plots
-%TODO: 1: use joint model fit 2: update to work with cross validated?
 
 % Set demo models to use
 % model(1) = CI type: none(0), Bayes (1) or probabilistic fusion (2)
@@ -86,25 +91,25 @@ end
 model = [1 1 3 1];
 
 % plot individually for monkeys
-for ind = 1:length(models_m)
-    m=models_m{ind};
-    subject = m.subject;
-    model_ind = ismember(vertcat(m.models{:}),model,'rows');
-    conditions = m.conditions{model_ind};
-    if model(3) == 3 %joint fit models have cell array rather than vectors for these
-        responses = m.responses{model_ind}{1};
-        fit_dist = m.fit_dist{model_ind}{1};
-    else
-        responses = m.responses{model_ind};
-        fit_dist = m.fit_dist{model_ind};
-    end
-    figure
-    plot_unity(conditions,responses,fit_dist);
-    title(sprintf('percent trials reported unity by target separation \n %s model %d%d%d%d',subject, model))
-    if savefiles
-        saveas(gcf,sprintf('%s\\%s_unity_combined',figpath,subject),'svg');
-    end
-end
+% for ind = 1:length(models_m)
+%     m=models_m{ind};
+%     subject = m.subject;
+%     model_ind = ismember(vertcat(m.models{:}),model,'rows');
+%     conditions = m.conditions{model_ind};
+%     if model(3) == 3 %joint fit models have cell array rather than vectors for these
+%         responses = m.responses{model_ind}{1};
+%         fit_dist = m.fit_dist{model_ind}{1};
+%     else
+%         responses = m.responses{model_ind};
+%         fit_dist = m.fit_dist{model_ind};
+%     end
+%     figure
+%     plot_unity(conditions,responses,fit_dist);
+%     title(sprintf('percent trials reported unity by target separation \n %s model %d%d%d%d',subject, model))
+%     if savefiles
+%         saveas(gcf,sprintf('%s\\%s_unity_combined',figpath,subject),'svg');
+%     end
+% end
 
 % plot combined for humans
 figure
