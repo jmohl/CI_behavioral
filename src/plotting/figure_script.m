@@ -8,15 +8,16 @@
 % Description: generates plots for the CI behavioral manuscript
 %
 
-local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
-cd(local_directory)
+% local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
+% cd(local_directory)
+
 addpath('src', 'src\plotting','results','data','src\lautils');
 figpath = 'doc\doc_figures';
 try
     mkdir(figpath)
 end
 
-set(0, 'DefaultLineLineWidth', 2);
+set(0, 'DefaultLineLineWidth', 1.5);
 set(0, 'DefaultLineMarkerSize', 7);
 set(0,'DefaultFigurePosition',[25,50,800,800])
 

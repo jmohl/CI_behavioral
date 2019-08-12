@@ -23,7 +23,7 @@ data_j = data_j.tidy_data;
 data_y = load('data\Yoko_combined.mat');
 data_y = data_y.tidy_data;
 
-data_j1 = load('data\Juno_AVD2_2018_04_11_tidy.mat');
+data_j1 = load('data\Juno_AVD2_2018_04_11_tidy.mat'); %3_19_2, 4_11
 data_j1 = data_j1.tidy_data;
 
 data_y1 = load('data\Yoko_AVD2_2019_04_17_tidy.mat'); %4_17, 4_25 good examples but have non-0 fix
@@ -36,7 +36,7 @@ data_y1 = data_y1.tidy_data;
 
 
 %combine human datasets
-files_H = dir('data\*H*');
+files_H = dir('data\*H*tidy*');
 data_H = {};
 for ind = 1:length(files_H)
     fname = files_H(ind).name;
@@ -47,8 +47,8 @@ end
 %rotate through subjects for each plots
  subjects = {data_j,data_y,data_H,data_j1,data_y1,data_H1};
  subject_id = {'Juno','Yoko','H','Juno1day','Yoko1day','H07'};
-%  subjects = {data_j1,data_y1,data_H1};
-%  subject_id = {'Juno1day','Yoko1day','H07'};
+%   subjects = {data_j1,data_y1};
+%   subject_id = {'Juno1day','Yoko1day'};
 % subjects = {data_H1};
 % subject_id = {'H07'};
 horz_only = 0; %option to plot horizontal component of eye trace over time
@@ -135,8 +135,8 @@ for ind = 1:length(subjects)
     else
         
         hold on
-        ref_tar_A = plot([ex_tars(1), ex_tars(1)],[-30,30],'--r');
-        ref_tar_V = plot([ex_tars(2), ex_tars(2)],[-30,30],'--b');
+        ref_tar_A = plot([ex_tars(1), ex_tars(1)],[-30,30],'--','color',aud_color);
+        ref_tar_V = plot([ex_tars(2), ex_tars(2)],[-30,30],'--', 'color',vis_color);
         
         for tr = 1:height(AV_ex_data)
             %subsample eye data, 1 dot per x*2 ms, remember sampling rate = 500hz
@@ -180,36 +180,35 @@ for ind = 1:length(subjects)
        
     subplot(1,3,3)
     hold on
-    
-    histogram(AV_sac_V(:,1),-30:30,'Normalization','Probability')
-    histogram(AV_sac_A(:,1),-30:30,'Normalization','Probability')
+    ref_tar_A = plot([ex_tars(1), ex_tars(1)],[0,.35],'--','color',aud_color,'LineWidth',2);
+    ref_tar_V = plot([ex_tars(2), ex_tars(2)],[0,.35],'--','color',vis_color,'LineWidth',2);
+  
+    A_hist = histogram(AV_sac_A(:,1),-30:30,'Normalization','Probability','FaceColor',aud_color,'FaceAlpha',1);
+    V_hist = histogram(AV_sac_V(:,1),-30:30,'Normalization','Probability','FaceColor',vis_color,'FaceAlpha',1);
     %plot unimodal dist
 %     plot(-49.5:49.5,A_sac_norm,'--','Color',[1 0 0 .5]);
 %     plot(-49.5:49.5,V_sac_norm,'--','Color',[0 0 1 .5]);
-    ref_tar_A = plot([ex_tars(1), ex_tars(1)],[0,.35],'--','color',aud_color,'LineWidth',2);
-    ref_tar_V = plot([ex_tars(2), ex_tars(2)],[0,.35],'--','color',vis_color,'LineWidth',2);
-    % plot unimodal mean triangle
-    max_p = .25;
-    plot(mean_A,max_p,'rv','MarkerSize',10)
-    plot(mean_V,max_p,'bv','MarkerSize',10)
-    plot(AV_mean_A,max_p,'rv','MarkerSize',10,'MarkerFaceColor','r')
-    plot(AV_mean_V,max_p,'bv','MarkerSize',10,'MarkerFaceColor','b')
-    
-    % do ttest between the two distributions
-    [HA,pA] = ttest(AV_sac_A(:,1)-mean_A);
-    [HV,pV] = ttest(AV_sac_V(:,1)-mean_V);
-    if HA
-        text(mean_A,max_p+.02,sprintf('%0.3f',pA))
-    end
-    if HV
-        text(mean_V,max_p+.02,sprintf('%0.3f',pV))
-    end    
+  % plot mean indicator - triangle
+%     max_p = .25;
+%     plot(mean_A,max_p,'v','MarkerSize',8, 'MarkerEdgeColor',aud_color)
+%     plot(mean_V,max_p,'v','MarkerSize',8, 'MarkerEdgeColor',vis_color)
+%     plot(AV_mean_A,max_p,'v','MarkerSize',8,'MarkerEdgeColor',aud_color,'MarkerFaceColor',aud_color)
+%     plot(AV_mean_V,max_p,'v','MarkerSize',8,'MarkerEdgeColor',vis_color,'MarkerFaceColor',vis_color)
+%     
+%     % do ttest between the two distributions
+%     [HA,pA] = ttest(AV_sac_A(:,1)-mean_A);
+%     [HV,pV] = ttest(AV_sac_V(:,1)-mean_V);
+%     if HA
+%         text(mean_A,max_p+.02,sprintf('%d',pA))
+%     end
+%     if HV
+%         text(mean_V,max_p+.02,sprintf('%d',pV))
+%     end    
 %     
     title('Saccade endpoints')
     xlabel('Horizontal eye position (deg)')
     ylabel('p in bin')
-    legend('Labeled Auditory', 'Labeled Visual','A target','V target')
-    
+    legend([A_hist,V_hist,ref_tar_A,ref_tar_V],'Labeled Auditory', 'Labeled Visual','A target','V target')
     
     %% save out figure
     set(gcf,'Position',[25,50,1400,350])
