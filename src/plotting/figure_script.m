@@ -23,7 +23,7 @@ set(0,'DefaultFigurePosition',[25,50,800,800])
 
 %selecting some nice colors for plotting, consistent across all
 global model_color aud_color vis_color
-model_color = [35/256,155/256,86/256];
+model_color = [35/256,155/256,86/256]; %[35/256,155/256,86/256] green
 aud_color = [192/256, 57/256, 43/256];
 vis_color = [52/256, 152/256, 219/256];
 
@@ -146,8 +146,8 @@ end
 % model(3) = task/fit type: unity judgement (1), localization (2), joint fit (3), unisensory localization (4)
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
 model = [1 1 3 1];
-example_conds_h = [11 13];
-example_conds_m = [11 12];
+example_conds_h = [13:15];
+example_conds_m = [12,14,15];
 plot_pred = 1;
 %plot for monkey days with pooled model fit
 
@@ -157,7 +157,7 @@ plot_pred = 1;
 %     %generate plot for single subject
 %      for ind2 = 1:2:length(example_conds) %for plotting all combos
 %     plot_localization(m,model,example_conds([ind2, ind2+1]),plot_pred);
-%     set(gcf,'Position',[25,50,1300,500])
+%     set(gcf,'Position',[25,50,1400,500])
 %     end
 %     if savefiles
 %         saveas(gcf,sprintf('%s\\%s_loc_combined',figpath,subject),'svg');
@@ -166,28 +166,28 @@ plot_pred = 1;
 % end
 %if given an array of model fits, will average them together and plot that
 
-for ind2 = 1:2:length(example_conds_h)  %for plotting all combos
-    plot_localization(models_h,model,example_conds_h([ind2, ind2+1]),plot_pred);
-    set(gcf,'Position',[25,50,1300,500])
-end
+% for ind2 = 1:2:length(example_conds_h)  %for plotting all combos
+    plot_localization(models_h,model,example_conds_h,plot_pred);
+    set(gcf,'Position',[25,50,1400,500])
+% end
 if savefiles
     saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'svg');
     saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'png');
 end
 
-for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
-    plot_localization(models_mj,model,example_conds_m([ind2, ind2+1]),plot_pred);
-    set(gcf,'Position',[25,50,1300,500])
-end
+% for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
+    plot_localization(models_mj,model,example_conds_m,plot_pred);
+    set(gcf,'Position',[25,50,1400,500])
+% end
 if savefiles
     saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'svg');
     saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'png');
 end
 
-for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
-    plot_localization(models_my,model,example_conds_m([ind2, ind2+1]),plot_pred);
-    set(gcf,'Position',[25,50,1300,500])
-end
+% for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
+    plot_localization(models_my,model,example_conds_m,plot_pred);
+    set(gcf,'Position',[25,50,1400,500])
+% end
 if savefiles
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'svg');
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'png');

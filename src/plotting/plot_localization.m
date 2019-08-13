@@ -39,6 +39,7 @@ if length(m) > 1
    end
    %get mean model and response fits
     responses = mean(responses,4);
+    fit_dist_sem = std(fit_dist,[],4)/sqrt(size(fit_dist,4));
     fit_dist = mean(fit_dist,4);
     A_resp = mean(A_resp,4);
     V_resp = mean(V_resp,4);
@@ -68,17 +69,41 @@ for this_ex = example_conds
     subplot(1,length(example_conds),plot_ind)
     hold on
      plot_modelhist(responses(this_ex,:,:),fit_dist(this_ex,:,:),xrange,plot_pred);
-    % add unimodal conditions to plot
+%8/13/19 note: the way I'm doing all of this is somewhat janky. It might be
+%better to go back to the raw saccades rather than using the binned data,
+%but that sounds like a future issue.
+     % add unimodal conditions to plot
     norm_A = A_resp(uni_cond{1}(:) == conditions(this_ex,1),:);
     norm_A = norm_A/sum(norm_A);%normalizing to probability, *2 because double saccade trials are rescaled this way for comparison with single saccade
     norm_V = V_resp(uni_cond{2}(:) == conditions(this_ex,2),:);
     norm_V = norm_V/sum(norm_V);%normalizing to probability,
     % get mean values
     mean_A = sum(norm_A.*xrange,2)./sum(norm_A,2);
+    mean_V = sum(norm_V.*xrange,2)./sum(norm_V,2);
     
-    plot(xrange,norm_A,'--','Color',aud_color);
-    plot(xrange,norm_V,'--','Color',vis_color);
-%     text(mean_A,max(norm_A),sprintf('|%2.2f',mean_A))
+    %get means from AV trials
+    norm_saccades=responses(this_ex,:,:)/sum(responses(this_ex,:,:),'all');
+    %single saccades will be along the diagonal
+    I_mat = logical(eye([length(xrange),length(xrange)]));
+    sing_sacs = norm_saccades(:,I_mat);
+    norm_saccades(:,I_mat) = 0; %remove saccades that are AV from counts
+    A_sacs = squeeze(sum(norm_saccades,2));
+    V_sacs = squeeze(sum(norm_saccades,3)); 
+    
+    AV_mean_A = sum(A_sacs'.*xrange)/sum(A_sacs);
+    AV_mean_V = sum(V_sacs.*xrange)/sum(V_sacs);
+    AV_mean_sing = sum(sing_sacs.*xrange)/sum(sing_sacs);
+      % plot mean indicator - triangle
+    max_p = .35;
+    plot(mean_A,max_p,'v','MarkerSize',4, 'MarkerEdgeColor',aud_color)
+    plot(mean_V,max_p,'v','MarkerSize',4, 'MarkerEdgeColor',vis_color)
+    plot(AV_mean_A,max_p,'v','MarkerSize',4,'MarkerEdgeColor',aud_color,'MarkerFaceColor',aud_color)
+    plot(AV_mean_V,max_p,'v','MarkerSize',4,'MarkerEdgeColor',vis_color,'MarkerFaceColor',vis_color)
+    plot(AV_mean_sing,max_p,'v','MarkerSize',4,'MarkerEdgeColor',[.2 .2 .2],'MarkerFaceColor',[.2 .2 .2])
+%plut unimodal dist
+%     plot(xrange,norm_A,'--','Color',aud_color);
+%     plot(xrange,norm_V,'--','Color',vis_color);
+    
 if length(m) == 1
     title(sprintf('A=%d, V=%d, %s',conditions(this_ex,1:2),m.subject));
 else

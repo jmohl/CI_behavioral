@@ -26,9 +26,9 @@ if ndims(saccades) == 2 %format for location estimation when all saccades are pu
     legend('Actual','Modeled');
     xlabel('endpoint location (degrees)');
     ylabel('% saccades in bin')
-
+    
     %adding R_squared to plots
-    Rsq = 1-sum((norm_saccades-norm_predicted).^2)/sum((norm_saccades-mean(norm_saccades)).^2); 
+    Rsq = 1-sum((norm_saccades-norm_predicted).^2)/sum((norm_saccades-mean(norm_saccades)).^2);
     text(-39,.1,sprintf('R^2:%0.2f',Rsq));
 elseif ndims(saccades) == 3
     % this condition is a little trickier because it's 3 dimensional for
@@ -44,10 +44,10 @@ elseif ndims(saccades) == 3
     norm_saccades(:,I_mat) = 0; %remove saccades that are AV from counts
     A_sacs = sum(norm_saccades,2); %divide by 2 to make probabilities sum to 1
     V_sacs = sum(norm_saccades,3); %JTM 7/18/19 made change here, removed division by 2
-    sac_bar = bar(xlocs,[sing_sacs(:),A_sacs(:),V_sacs(:)],'stacked');%normalizing to probability
-    sac_bar(1).FaceColor = [.2 .2 .2];
-    sac_bar(2).FaceColor = aud_color;
-    sac_bar(3).FaceColor = cis_color;
+    sac_bar = bar(xlocs,[A_sacs(:),V_sacs(:),sing_sacs(:)],'stacked');%normalizing to probability
+    sac_bar(1).FaceColor = aud_color;
+    sac_bar(2).FaceColor = vis_color;
+    sac_bar(3).FaceColor = [.2 .2 .2];
     hold on
     if plot_pred
         norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
@@ -62,10 +62,6 @@ elseif ndims(saccades) == 3
     xlabel('endpoint location (degrees)');
     ylabel('% saccades in bin')
     set(gca,'box','off')
-    %probably need to double check this rsq calc cause I'm getting weird
-    %values.
-%     Rsq = 1-sum((norm_saccades(:)-norm_predicted(:)).^2)/sum((norm_saccades(:)-mean(norm_saccades(:))).^2); 
-%     text(-39,.1,sprintf('R^2:%0.2f',Rsq));
 end
-    
+
 end
