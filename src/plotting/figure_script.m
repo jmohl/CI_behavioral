@@ -168,7 +168,7 @@ plot_pred = 1;
 
 % for ind2 = 1:2:length(example_conds_h)  %for plotting all combos
     plot_localization(models_h,model,example_conds_h,plot_pred);
-    set(gcf,'Position',[25,50,1400,500])
+    set(gcf,'Position',[25,50,1400,300])
 % end
 if savefiles
     saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'svg');
@@ -177,7 +177,7 @@ end
 
 % for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
     plot_localization(models_mj,model,example_conds_m,plot_pred);
-    set(gcf,'Position',[25,50,1400,500])
+    set(gcf,'Position',[25,50,1400,300])
 % end
 if savefiles
     saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'svg');
@@ -186,7 +186,7 @@ end
 
 % for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
     plot_localization(models_my,model,example_conds_m,plot_pred);
-    set(gcf,'Position',[25,50,1400,500])
+    set(gcf,'Position',[25,50,1400,300])
 % end
 if savefiles
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'svg');
@@ -254,62 +254,71 @@ model_names{ind} = get_model_names(models{ind});
 end
 model_comp_AIC = array2table(AIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
 model_comp_BIC = array2table(BIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
-
-    
+  
 %% BIC figure
 
 figure
-subj_bars = barh(BIC_mean(:,1:2));
+subj_bars = barh(AIC_mean(:,1:2));
 subj_bars(1).FaceColor = [.5 .5 .5];
 subj_bars(2).FaceColor = [0 0 0];
 
 yticklabels({'h','mj','my'});
 hold on
-errorbar(BIC_mean(:,1:2),[.86 1.14;1.86 2.14;2.86 3.14],BIC_sem(:,1:2),'k.','horizontal')
+errorbar(AIC_mean(:,1:2),[.86 1.14;1.86 2.14;2.86 3.14],AIC_sem(:,1:2),'k.','horizontal')
 
 %add individual subjects?
-scatter(reshape(BIC_h_rel(:,1:2),1,[]),reshape(repmat([.86 1.14],7,1),1,[]),[],[1:7,1:7],'filled');
-scatter(reshape(BIC_mj_rel(:,1:2),1,[]),reshape(repmat([1.86 2.14],10,1),1,[]),[],[1:10,1:10],'filled');
-scatter(reshape(BIC_my_rel(:,1:2),1,[]),reshape(repmat([2.86 3.14],10,1),1,[]),[],[1:10,1:10],'filled');
+scatter(reshape(AIC_h_rel(:,1:2),1,[]),reshape(repmat([.86 1.14],7,1),1,[]),[],[1:7,1:7],'filled');
+scatter(reshape(AIC_mj_rel(:,1:2),1,[]),reshape(repmat([1.86 2.14],10,1),1,[]),[],[1:10,1:10],'filled');
+scatter(reshape(AIC_my_rel(:,1:2),1,[]),reshape(repmat([2.86 3.14],10,1),1,[]),[],[1:10,1:10],'filled');
 
 legend(subj_bars,horzcat(model_names{1:2}),'Interpreter','none')
 ylabel('Subjects')
-xlabel('Delta BIC')
+xlabel('Delta AIC')
 if savefiles
-    saveas(gcf,sprintf('%s\\deltaBIC',figpath),'png');
-    saveas(gcf,sprintf('%s\\deltaBIC',figpath),'svg');
+    saveas(gcf,sprintf('%s\\deltaAIC',figpath),'png');
+    saveas(gcf,sprintf('%s\\deltaAIC',figpath),'svg');
 end
-
-
-
-
 
 %% if want to compare between models of CI
 
 %get relative to heuristic model
-BIC_mj_rel = BIC_mj - BIC_mj(:,2);
-BIC_my_rel = BIC_my - BIC_my(:,2);
-BIC_h_rel = BIC_h - BIC_h(:,2);
+AIC_mj_rel = AIC_mj - AIC_mj(:,2);
+AIC_my_rel = AIC_my - AIC_my(:,2);
+AIC_h_rel = AIC_h - AIC_h(:,2);
 
 %get means + std for all
 %rows are [humans;monkey_j;monkey_y]
 %columns are [models 1:3]
-BIC_mean = [mean(BIC_h_rel,1);mean(BIC_mj_rel,1);mean(BIC_my_rel,1);];
-BIC_sem = [std(BIC_h_rel,1)/sqrt(length(models_h));std(BIC_mj_rel,1)/sqrt(length(models_mj));std(BIC_my_rel,1)/sqrt(length(models_my));];
-model_comp_BIC = array2table(BIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
-
+AIC_mean = [mean(AIC_h_rel,1);mean(AIC_mj_rel,1);mean(AIC_my_rel,1);];
+AIC_sem = [std(AIC_h_rel,1)/sqrt(length(models_h));std(AIC_mj_rel,1)/sqrt(length(models_mj));std(AIC_my_rel,1)/sqrt(length(models_my));];
+model_comp_AIC = array2table(AIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
     
-mean(BIC_mean)
-mean(BIC_sem)
+mean(AIC_mean)
+mean(AIC_sem)
 
+%% Table 1: comparison of fit parameters
 
+model = [1 1 3 1];
+subj_models = {models_h;models_mj;models_my;};
+subj_labels = {'Humans','Monkey J', 'Monkey Y'};
+theta_labels = {'A_sig','V_sig','prior_sig','p_common','lambda'};
+theta_means = zeros(3,5);
+theta_sem = zeros(3,5);
 
+for ind = 1:length(subj_models)
+m=subj_models{ind,:};
+subj_thetas = zeros(length(m),5);
+for subj_ind = 1:length(m)
+    this_m = m{subj_ind};
+    model_ind = ismember(vertcat(this_m.models{:}),model,'rows');
+    subj_thetas(subj_ind,:) = this_m.thetas{model_ind};
+end
+theta_means(ind,:) = mean(subj_thetas);
+theta_sem(ind,:) = std(subj_thetas)./sqrt(size(subj_thetas,1));
+end
 
-
-
-
-
-
+mean_table=array2table(theta_means,'VariableNames',theta_labels,'RowNames',subj_labels)
+sem_table=array2table(theta_sem,'VariableNames',theta_labels,'RowNames',subj_labels)
 
 
 
