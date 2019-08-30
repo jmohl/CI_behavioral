@@ -14,7 +14,7 @@
 function plot_localization(m,model,example_conds,plot_pred)
 global aud_color vis_color
 plot_unimodal = 0;
-    
+plot_error = 1;    
 
 if length(m) > 1
    % pool data across model structures if provided with multiple 
@@ -70,7 +70,7 @@ plot_ind = 1;
 for this_ex = example_conds
     subplot(1,length(example_conds),plot_ind)
     hold on
-     plot_modelhist(responses(this_ex,:,:),fit_dist(this_ex,:,:),xrange,plot_pred);
+     plot_modelhist(responses(this_ex,:,:),{fit_dist(this_ex,:,:),fit_dist_sem(this_ex,:,:)},xrange,plot_pred);
          xlim([-10,30])
 
      %8/13/19 note: the way I'm doing all of this is somewhat janky. It might be
@@ -109,9 +109,9 @@ for this_ex = example_conds
          plot(xrange,norm_A,'--','Color',aud_color);
          plot(xrange,norm_V,'--','Color',vis_color);
      end
-     plot([conditions(this_ex,1) conditions(this_ex,1)],[0 .35],'--','Color',aud_color);
-     plot([conditions(this_ex,2) conditions(this_ex,2)],[0 .35],'--','Color',vis_color);
-     
+     %add target location plots
+    plot([conditions(this_ex,1) conditions(this_ex,1)],[0 .35],'--','Color',aud_color);
+    plot([conditions(this_ex,2) conditions(this_ex,2)],[0 .35],'--','Color',vis_color);
 if length(m) == 1
     title(sprintf('A=%d, V=%d, %s',conditions(this_ex,1:2),m.subject));
 else
@@ -120,7 +120,7 @@ end
     plot_ind = 1 + plot_ind;
 end
 if plot_pred
-    legend('A sac, C=2','V sac, C=2','Single sac, C=1','Modeled', 'A target', 'V target','Location','Best');
+    legend('A sac, C=2','V sac, C=2','Single sac, C=1','Model SEM','Model', 'A target', 'V target','Location','Best');
 else
     legend('A sac, C=2','V sac, C=2','Single sac, C=1', 'A target', 'V target','Location','Best');
 end

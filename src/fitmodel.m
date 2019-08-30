@@ -91,7 +91,7 @@ function [UBND,LBND] = get_ini_params(model)
 % theta(8) prior_sig2
 
 UBND = [6 15 40 .9 .25];
-LBND = [.5 1 5 .1 0];
+LBND = [.5 1 5 .1 0.01];
 
 
 if model(4) == 3 

@@ -9,11 +9,11 @@
 % values across subjects
 %
 
-function [AIC,BIC] = get_model_comp_table(m_fits, models, n_params)
+function [AIC,BIC,nll_array] = get_model_comp_table(m_fits, models, n_params)
 
 AIC = zeros(length(m_fits),length(models));
 BIC = zeros(length(m_fits),length(models));
-
+nll_array = zeros(length(m_fits),length(models));
 for subj = 1:length(m_fits)
     this_subject = m_fits{subj};
     for model = 1:length(models)
@@ -25,6 +25,7 @@ for subj = 1:length(m_fits)
         else
             n_obs = sum(this_subject.responses{model_ind},'all');
         end
+        nll_array(subj,model) = nll;
         [AIC(subj,model),BIC(subj,model)] = aicbic(-nll,n_params(model),n_obs);
     end
 end

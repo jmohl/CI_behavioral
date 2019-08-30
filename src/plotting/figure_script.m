@@ -29,12 +29,6 @@ vis_color = [52/256, 152/256, 219/256];
 
 savefiles = 1;
 
-%% Plot Schematics - this runs fairly slow because it is doing numerical integration
- plot_schematics(figpath)
-
-%% plot raw data figures - uses raw tidy_data
- plot_raw_behavior(figpath,savefiles)
-
 %% load model structures - subsequent plots all rely on fit model results
 subject_m = {'Yoko' 'Juno'};
 subject_h = {'H02' 'H03' 'H04' 'H05' 'H06' 'H07' 'H08'};
@@ -82,6 +76,11 @@ for subject = subject_h
     ind = ind+1;
 end
 
+%% Plot Schematics - this runs fairly slow because it is doing numerical integration
+plot_schematics(figpath)
+
+%% plot raw data figures - uses raw tidy_data
+plot_raw_behavior(figpath,savefiles)
 %% unity judgement plots
 
 % Set demo models to use
@@ -167,8 +166,8 @@ plot_pred = 1;
 %if given an array of model fits, will average them together and plot that
 
 % for ind2 = 1:2:length(example_conds_h)  %for plotting all combos
-    plot_localization(models_h,model,example_conds_h,plot_pred);
-    set(gcf,'Position',[25,50,1400,300])
+plot_localization(models_h,model,example_conds_h,plot_pred);
+set(gcf,'Position',[25,50,1400,300])
 % end
 if savefiles
     saveas(gcf,sprintf('%s\\humans_loc_combined',figpath),'svg');
@@ -176,8 +175,8 @@ if savefiles
 end
 
 % for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
-    plot_localization(models_mj,model,example_conds_m,plot_pred);
-    set(gcf,'Position',[25,50,1400,300])
+plot_localization(models_mj,model,example_conds_m,plot_pred);
+set(gcf,'Position',[25,50,1400,300])
 % end
 if savefiles
     saveas(gcf,sprintf('%s\\juno_loc_splitday',figpath),'svg');
@@ -185,119 +184,15 @@ if savefiles
 end
 
 % for ind2 = 1:2:length(example_conds_m)  %for plotting all combos
-    plot_localization(models_my,model,example_conds_m,plot_pred);
-    set(gcf,'Position',[25,50,1400,300])
+plot_localization(models_my,model,example_conds_m,plot_pred);
+set(gcf,'Position',[25,50,1400,300])
 % end
 if savefiles
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'svg');
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'png');
 end
-%% Condensed localization plot
-
-model = [1 1 3 1];
-true_loc = 0; %option to use true target locations or relative locations (from unimodal saccades) for specifying bias.
-plot_condensed_loc(models_mj,model,true_loc);
-title('Juno')
-if savefiles
-    saveas(gcf,sprintf('%s\\juno_condensed_bias',figpath),'png');
-    saveas(gcf,sprintf('%s\\juno_condensed_bias',figpath),'svg');
-end
-
-plot_condensed_loc(models_my,model,true_loc);
-title('Yoko')
-if savefiles
-    saveas(gcf,sprintf('%s\\yoko_condensed_bias',figpath),'png');
-    saveas(gcf,sprintf('%s\\yoko_condensed_bias',figpath),'svg');
-end
-
-plot_condensed_loc(models_h,model,true_loc);
-title('Human')
-if savefiles
-    saveas(gcf,sprintf('%s\\HU_condensed_bias',figpath),'png');
-    saveas(gcf,sprintf('%s\\HU_condensed_bias',figpath),'svg');
-end
-
-
-%% unimodal localization plot, not working yet
-% example_conds = [2 4];
-% plot_localization(models_h,[0 0 4 1],example_conds,plot_pred);
-
-%% AIC BIC table
-%which models to compare
-models = {[1 1 3 1];[1 2 3 1];[1 3 3 1]}; %Bayes, model selection, probabilistic fusion (null) 
-%comparing models on the localization component only, as the 
-n_params = [5, 5, 5];
-
-[AIC_h,BIC_h] = get_model_comp_table(models_h,models,n_params);
-[AIC_mj,BIC_mj] = get_model_comp_table(models_mj,models,n_params);
-[AIC_my,BIC_my] = get_model_comp_table(models_my,models,n_params);
-
-%get relative to non-CI model (probabilistic fusion)
-AIC_mj_rel = AIC_mj - AIC_mj(:,3);
-AIC_my_rel = AIC_my - AIC_my(:,3);
-AIC_h_rel = AIC_h - AIC_h(:,3);
-
-BIC_mj_rel = BIC_mj - BIC_mj(:,3);
-BIC_my_rel = BIC_my - BIC_my(:,3);
-BIC_h_rel = BIC_h - BIC_h(:,3);
-
-%get means + std for all
-%rows are [humans;monkey_j;monkey_y]
-%columns are [models 1:3]
-AIC_mean = [mean(AIC_h_rel,1);mean(AIC_mj_rel,1);mean(AIC_my_rel,1);];
-AIC_sem = [std(AIC_h_rel,1)/sqrt(length(models_h));std(AIC_mj_rel,1)/sqrt(length(models_mj));std(AIC_my_rel,1)/sqrt(length(models_my));];
-BIC_mean = [mean(BIC_h_rel,1);mean(BIC_mj_rel,1);mean(BIC_my_rel,1);];
-BIC_sem = [std(BIC_h_rel,1)/sqrt(length(models_h));std(BIC_mj_rel,1)/sqrt(length(models_mj));std(BIC_my_rel,1)/sqrt(length(models_my));];
-
-for ind = 1:length(models)
-model_names{ind} = get_model_names(models{ind});
-end
-model_comp_AIC = array2table(AIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
-model_comp_BIC = array2table(BIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
-  
-%% BIC figure
-
-figure
-subj_bars = barh(AIC_mean(:,1:2));
-subj_bars(1).FaceColor = [.5 .5 .5];
-subj_bars(2).FaceColor = [0 0 0];
-
-yticklabels({'h','mj','my'});
-hold on
-errorbar(AIC_mean(:,1:2),[.86 1.14;1.86 2.14;2.86 3.14],AIC_sem(:,1:2),'k.','horizontal')
-
-%add individual subjects?
-scatter(reshape(AIC_h_rel(:,1:2),1,[]),reshape(repmat([.86 1.14],7,1),1,[]),[],[1:7,1:7],'filled');
-scatter(reshape(AIC_mj_rel(:,1:2),1,[]),reshape(repmat([1.86 2.14],10,1),1,[]),[],[1:10,1:10],'filled');
-scatter(reshape(AIC_my_rel(:,1:2),1,[]),reshape(repmat([2.86 3.14],10,1),1,[]),[],[1:10,1:10],'filled');
-
-legend(subj_bars,horzcat(model_names{1:2}),'Interpreter','none')
-ylabel('Subjects')
-xlabel('Delta AIC')
-if savefiles
-    saveas(gcf,sprintf('%s\\deltaAIC',figpath),'png');
-    saveas(gcf,sprintf('%s\\deltaAIC',figpath),'svg');
-end
-
-%% if want to compare between models of CI
-
-%get relative to heuristic model
-AIC_mj_rel = AIC_mj - AIC_mj(:,2);
-AIC_my_rel = AIC_my - AIC_my(:,2);
-AIC_h_rel = AIC_h - AIC_h(:,2);
-
-%get means + std for all
-%rows are [humans;monkey_j;monkey_y]
-%columns are [models 1:3]
-AIC_mean = [mean(AIC_h_rel,1);mean(AIC_mj_rel,1);mean(AIC_my_rel,1);];
-AIC_sem = [std(AIC_h_rel,1)/sqrt(length(models_h));std(AIC_mj_rel,1)/sqrt(length(models_mj));std(AIC_my_rel,1)/sqrt(length(models_my));];
-model_comp_AIC = array2table(AIC_mean,'RowNames',{'h','mj','my'},'VariableNames',horzcat(model_names{:}))
-    
-mean(AIC_mean)
-mean(AIC_sem)
 
 %% Table 1: comparison of fit parameters
-
 model = [1 1 3 1];
 subj_models = {models_h;models_mj;models_my;};
 subj_labels = {'Humans','Monkey J', 'Monkey Y'};
@@ -306,29 +201,79 @@ theta_means = zeros(3,5);
 theta_sem = zeros(3,5);
 
 for ind = 1:length(subj_models)
-m=subj_models{ind,:};
-subj_thetas = zeros(length(m),5);
-for subj_ind = 1:length(m)
-    this_m = m{subj_ind};
-    model_ind = ismember(vertcat(this_m.models{:}),model,'rows');
-    subj_thetas(subj_ind,:) = this_m.thetas{model_ind};
-end
-theta_means(ind,:) = mean(subj_thetas);
-theta_sem(ind,:) = std(subj_thetas)./sqrt(size(subj_thetas,1));
+    m=subj_models{ind,:};
+    subj_thetas = zeros(length(m),5);
+    for subj_ind = 1:length(m)
+        this_m = m{subj_ind};
+        model_ind = ismember(vertcat(this_m.models{:}),model,'rows');
+        subj_thetas(subj_ind,:) = this_m.thetas{model_ind};
+    end
+    theta_means(ind,:) = mean(subj_thetas);
+    theta_sem(ind,:) = std(subj_thetas)./sqrt(size(subj_thetas,1));
 end
 
 mean_table=array2table(theta_means,'VariableNames',theta_labels,'RowNames',subj_labels)
 sem_table=array2table(theta_sem,'VariableNames',theta_labels,'RowNames',subj_labels)
 
+%% Retrying model comparison using VBA toolbox to get BOR and exceedence probabilities
+joint_models = {[1 1 3 1];[1 2 3 1];[1 3 3 1]}; %Bayes, model selection, probabilistic fusion (null)
+unity_models = {[1 0 1 1];[2 0 1 1]};
+loc_models = {[1 1 2 1];[1 2 2 1];[1 3 2 1]};
 
+models = {unity_models,loc_models,joint_models};
+n_params = {[5,5],[5, 5, 5],[5,5,5]};
+titles = {'Unity','Localization','Joint'};
 
+figure
+for ind = 1:length(models)
 
-
-
-
-
-
-
-
+    model = models{ind};
+    n_param = n_params{ind};
+    % code for get_model_comp_table returns the nll as well as the AIC and BIC
+    
+    [~,~,nll_table_h] = get_model_comp_table(models_h,model,n_param);
+    [~,~,nll_table_m] = get_model_comp_table(models_m,model,n_param);
+    %but this is in the wrong direction (subjects x models) so need to
+    %transpose, and also make log likelihood instead of nll
+    Lh = -1*nll_table_h';
+    Lm = -1*nll_table_m';
+    %Use VBA toolbox to get posterior frequency and protected exceedance
+    %input is a KxN array of loglikelihood with K models by N subjects
+    options.DisplayWin = 0;
+    [~,out_h] = VBA_groupBMC(Lh,options); %this is working, think I want to use the posterior.r distribution to report. Also get exceedance probabilities as out.ep
+    [~,out_m] = VBA_groupBMC(Lm,options); %this is working, think I want to use the posterior.r distribution to report. Also get exceedance probabilities as out.ep
+    
+    % going to plot protected exceedance probability out.pxp, and model
+    % frequency as an error bar plot out.Ef Vf
+    subplot(1,length(models),ind)
+    hold on
+    this_bar = bar([out_h.pxp',out_m.pxp']);
+    bar_x_coords = 1:length(out_h.pxp);
+    xticks(bar_x_coords);
+    bar_x_coords = [bar_x_coords - .14,bar_x_coords + .14];
+    errorbar(bar_x_coords, [out_h.Ef',out_m.Ef'], [out_m.Vf',out_m.Vf'], 'k.','MarkerSize',10) %these x values are hard coded, to align the bars and errors, but thats not great.
+    plot([0.5 length(model)+.5],[1/length(model), 1/length(model)],'r--')
+    %formatting
+    if ind == 1
+        legend('Humans','Monkeys', 'Posterior Frequency','Chance')
+    end
+    clear model_names;
+    for name_ind = 1:length(model)
+        model_names{name_ind} = get_model_names(model{name_ind});
+    end
+    set(gca,'TickLabelInterpreter','none')
+    xticklabels(horzcat(model_names{:}));
+    xlabel('Model')
+    ylabel('Probability')
+    title(titles{ind});
+    text(length(model)-.5,.5,sprintf('BOR H: %1.2f\nBOR M: %1.2f',out_h.bor, out_m.bor))
+    this_bar(1).FaceColor = [.65 .65 .65];
+    this_bar(2).FaceColor = [.85 .85 .85];
+end
+set(gcf,'Position',[25,50,1400,300])
+if savefiles
+    saveas(gcf,sprintf('%s\\model_comp',figpath),'png');
+    saveas(gcf,sprintf('%s\\model_comp',figpath),'svg');
+end
 
 

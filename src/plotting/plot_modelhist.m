@@ -14,6 +14,8 @@
 function plot_modelhist(saccades,predicted,xlocs, plot_pred)
 global model_color aud_color vis_color
 
+show_error = 0; %defaults to false, if predicted is a cell array, will assume true
+
 if ndims(saccades) == 2 %format for location estimation when all saccades are put together
     norm_saccades=saccades/sum(saccades);
     norm_predicted = predicted*abs(xlocs(1)-xlocs(2));
@@ -50,18 +52,39 @@ elseif ndims(saccades) == 3
     sac_bar(3).FaceColor = [.2 .2 .2];
     hold on
     if plot_pred
-        norm_predicted = predicted*abs(xlocs(1)-xlocs(2))^2;
+        if length(predicted) == 2
+            mean_predicted = predicted{1};
+            sem_predicted = predicted{2};
+            show_error = 1;
+        else
+            mean_predicted = predicted;
+        end
+        norm_predicted = mean_predicted*abs(xlocs(1)-xlocs(2))^2;
         norm_pred_sing = norm_predicted(:,I_mat);
         norm_predicted(:,I_mat) = 0;
         pred_A = squeeze(sum(norm_predicted,2));
         pred_V = squeeze(sum(norm_predicted,3));
         projected_pred = pred_A + pred_V' + norm_pred_sing';
-        plot(xlocs,projected_pred,'LineWidth',1.5,'Color',model_color); %scaling by bin width so that the probability is matched correctly
+        if show_error
+            norm_sem = sem_predicted*abs(xlocs(1)-xlocs(2))^2;
+            norm_sem_sing = norm_sem(:,I_mat);
+            norm_sem(:,I_mat) = 0;
+            norm_sem_A = squeeze(sum(norm_sem,2));
+            norm_sem_V = squeeze(sum(norm_sem,3));
+            norm_sem_pred = norm_sem_A + norm_sem_V' + norm_sem_sing';
+            model_sem_bnd =[projected_pred + norm_sem_pred,projected_pred - norm_sem_pred];
+            % plot confidence intervals for model
+            x_plot =[xlocs, fliplr(xlocs)];
+            y_plot=[model_sem_bnd(:,1); flipud(model_sem_bnd(:,2))];
+            fill(x_plot, y_plot', 1,'facecolor', model_color, 'edgecolor', model_color, 'facealpha', 0.5);
+        end
+         plot(xlocs,projected_pred,'LineWidth',1.5,'Color',model_color); %scaling by bin width so that the probability is matched correctly
     end
     xlim([-40 40])
     xlabel('endpoint location (degrees)');
     ylabel('% saccades in bin')
     set(gca,'box','off')
+    
 end
 
 end
