@@ -32,8 +32,6 @@ global fitoptions
 %fminsearch. In the future might switch from fminsearch to bads if that
 %works better.
 
-%todos: validation
-
 %2/1/19 note: used timeit to test this likelihood function as 0.0091 sec
 %for human subject H08 unity judgement. Unfortunately for the localization
 %judgement case it takes 2.28 seconds (with eval_n = 250, with eval_n = 100

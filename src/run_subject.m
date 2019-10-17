@@ -18,10 +18,6 @@ function run_subject(subject,raw_data,model_list)
 global fitoptions
 
 %% Clean data
-% run stringent single saccade filter TESTING, moved to get_prepro_data
-% if fitoptions.strict_filter 
-%     raw_data = strict_single_filter(raw_data);
-% end
 
 %get valid data only
 valid_data = raw_data(logical(raw_data.valid_tr),:);
@@ -37,7 +33,7 @@ end
 %% CI model (new)
 clear m;
 %load saved modelfits, if exist
-if exist(sprintf('results\\modelfits\\%s_m.mat',subject),'file') %&&  fitoptions.load_saved_fits
+if exist(sprintf('results\\modelfits\\%s_m.mat',subject),'file') 
     m=load(sprintf('results\\modelfits\\%s_m.mat',subject));
     m=m.m;
 else % if there is no modelstruct at all, initialize model struct

@@ -8,8 +8,8 @@
 % Description: generates plots for the CI behavioral manuscript
 %
 
-% local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
-% cd(local_directory)
+ local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
+ cd(local_directory)
 
 addpath('src', 'src\plotting','results','data','src\lautils');
 figpath = 'doc\doc_figures';
@@ -80,7 +80,43 @@ end
 plot_schematics(figpath)
 
 %% plot raw data figures - uses raw tidy_data
-plot_raw_behavior(figpath,savefiles)
+plot_raw_behavior(figpath,savefiles);
+
+%% get raw data statistics for accuracy
+data_j = load('data\Juno_combined.mat');
+data_j = data_j.tidy_data;
+
+data_y = load('data\Yoko_combined.mat');
+data_y = data_y.tidy_data;
+
+files_H = dir('data\*H*tidy*');
+data_H = {};
+for ind = 1:length(files_H)
+    fname = files_H(ind).name;
+    this_data = load(sprintf('data\\%s',fname));
+    data_H = vertcat(data_H,this_data.tidy_data);
+end
+
+subj = {data_j,data_y,data_H};
+subj_name = {'Juno','Yoko','Human'};
+
+for subj_ind = 1:length(subj)
+    raw_behavior_stats(subj_ind) = get_raw_behavior_stats(subj{subj_ind},subj_name{subj_ind});
+end
+
+for subj_ind = 1:length(subj)
+raw_behavior_stats_table(subj_ind,:) = cell2table({raw_behavior_stats(subj_ind).subject,...
+    mean(raw_behavior_stats(subj_ind).A_error),...
+    mean(raw_behavior_stats(subj_ind).V_error),...
+    mean(raw_behavior_stats(subj_ind).std_A),...
+    mean(raw_behavior_stats(subj_ind).std_V),...
+    mean(raw_behavior_stats(subj_ind).AV_A_error),...
+    mean(raw_behavior_stats(subj_ind).AV_V_error),...
+    mean(raw_behavior_stats(subj_ind).std_AV_A),...
+    mean(raw_behavior_stats(subj_ind).std_AV_V)});
+end
+raw_behavior_stats_table.Properties.VariableNames = {'Subject','A_error','V_error','std_A','std_V','AV_A_error','AV_V_error','std_AV_A','std_AV_V'};
+
 %% unity judgement plots
 
 % Set demo models to use
@@ -192,7 +228,7 @@ if savefiles
     saveas(gcf,sprintf('%s\\yoko_loc_splitday',figpath),'png');
 end
 
-%% Table 1: comparison of fit parameters
+%% Table: comparison of fit parameters
 model = [1 1 3 1];
 subj_models = {models_h;models_mj;models_my;};
 subj_labels = {'Humans','Monkey J', 'Monkey Y'};
@@ -215,7 +251,9 @@ end
 mean_table=array2table(theta_means,'VariableNames',theta_labels,'RowNames',subj_labels)
 sem_table=array2table(theta_sem,'VariableNames',theta_labels,'RowNames',subj_labels)
 
-%% Retrying model comparison using VBA toolbox to get BOR and exceedence probabilities
+%% ANOVA of percent single saccade by target sep
+
+%% Model comparison using VBA toolbox to get BOR and exceedence probabilities
 joint_models = {[1 1 3 1];[1 2 3 1];[1 3 3 1]}; %Bayes, model selection, probabilistic fusion (null)
 unity_models = {[1 0 1 1];[2 0 1 1]};
 loc_models = {[1 1 2 1];[1 2 2 1];[1 3 2 1]};
@@ -225,6 +263,8 @@ n_params = {[5,5],[5, 5, 5],[5,5,5]};
 titles = {'Unity','Localization','Joint'};
 
 figure
+fit_results_h = {};
+fit_results_m = {};
 for ind = 1:length(models)
 
     model = models{ind};
@@ -240,9 +280,10 @@ for ind = 1:length(models)
     %Use VBA toolbox to get posterior frequency and protected exceedance
     %input is a KxN array of loglikelihood with K models by N subjects
     options.DisplayWin = 0;
-    [~,out_h] = VBA_groupBMC(Lh,options); %this is working, think I want to use the posterior.r distribution to report. Also get exceedance probabilities as out.ep
-    [~,out_m] = VBA_groupBMC(Lm,options); %this is working, think I want to use the posterior.r distribution to report. Also get exceedance probabilities as out.ep
-    
+    [~,out_h] = VBA_groupBMC(Lh,options); %this is working, I want to use the posterior.r distribution to report. Also get exceedance probabilities as out.ep and protexted as pxp
+    [~,out_m] = VBA_groupBMC(Lm,options);
+    fit_results_h{ind} = out_h;
+    fit_results_m{ind} = out_m;
     % going to plot protected exceedance probability out.pxp, and model
     % frequency as an error bar plot out.Ef Vf
     subplot(1,length(models),ind)

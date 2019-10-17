@@ -16,7 +16,6 @@
 function plot_raw_behavior(figpath,savefiles)
 global aud_color vis_color
 
-
 data_j = load('data\Juno_combined.mat');
 data_j = data_j.tidy_data;
 
@@ -33,7 +32,6 @@ data_y1 = data_y1.tidy_data;
  data_H1 = data_H1.tidy_data;
 % data_H1 = load('data\H07_AVD2_2018_08_09_tidy.mat');
 % data_H1 = data_H1.tidy_data;
-
 
 %combine human datasets
 files_H = dir('data\*H*tidy*');
@@ -162,21 +160,10 @@ for ind = 1:length(subjects)
     % This is essentially copying plot_localization but I am working with the
     % data in a different format. Probably worth considering just using
     % plot_localization instead so that it exactly matches
-    A_ex_data = A_data(A_data.A_tar == ex_tars(1),:);
-    V_ex_data = V_data(V_data.V_tar == ex_tars(2),:);
-
-    A_sac = vertcat(A_ex_data.valid_endpoints{:});
-    V_sac = vertcat(V_ex_data.valid_endpoints{:});
-%     xrange = -50:50;
-%     A_sac_norm = histcounts(A_sac(:,1),xrange)/length(A_sac(:,1));
-%     V_sac_norm = histcounts(V_sac(:,1),xrange)/length(V_sac(:,1));
-    mean_A = mean(A_sac(:,1));
-    mean_V = mean(V_sac(:,1));
 
     AV_sac_A = vertcat(AV_ex_data.A_endpoints{:});
     AV_sac_V = vertcat(AV_ex_data.V_endpoints{:});
-    AV_mean_A = mean(AV_sac_A(:,1));
-    AV_mean_V = mean(AV_sac_V(:,1));
+
        
     subplot(1,3,3)
     hold on
@@ -185,10 +172,31 @@ for ind = 1:length(subjects)
   
     A_hist = histogram(AV_sac_A(:,1),-30:30,'Normalization','Probability','FaceColor',aud_color,'FaceAlpha',1);
     V_hist = histogram(AV_sac_V(:,1),-30:30,'Normalization','Probability','FaceColor',vis_color,'FaceAlpha',1);
-    %plot unimodal dist
+    title('Saccade endpoints')
+    xlabel('Horizontal eye position (deg)')
+    ylabel('p in bin')
+    legend([A_hist,V_hist,ref_tar_A,ref_tar_V],'Labeled Auditory', 'Labeled Visual','A target','V target')
+
+    % below, I toyed with showing the unimodal distribution from single
+    % target trials and/or means taken from these distributions, but
+    % decided it was too cluttered.
+%plot unimodal dist
+%     A_ex_data = A_data(A_data.A_tar == ex_tars(1),:);
+%     V_ex_data = V_data(V_data.V_tar == ex_tars(2),:);
+
+%     A_sac = vertcat(A_ex_data.valid_endpoints{:});
+%     V_sac = vertcat(V_ex_data.valid_endpoints{:});
+%     xrange = -50:50;
+%     A_sac_norm = histcounts(A_sac(:,1),xrange)/length(A_sac(:,1));
+%     V_sac_norm = histcounts(V_sac(:,1),xrange)/length(V_sac(:,1));
+%     mean_A = mean(A_sac(:,1));
+%     mean_V = mean(V_sac(:,1));
+
 %     plot(-49.5:49.5,A_sac_norm,'--','Color',[1 0 0 .5]);
 %     plot(-49.5:49.5,V_sac_norm,'--','Color',[0 0 1 .5]);
   % plot mean indicator - triangle
+  %     AV_mean_A = mean(AV_sac_A(:,1));
+%     AV_mean_V = mean(AV_sac_V(:,1));
 %     max_p = .25;
 %     plot(mean_A,max_p,'v','MarkerSize',8, 'MarkerEdgeColor',aud_color)
 %     plot(mean_V,max_p,'v','MarkerSize',8, 'MarkerEdgeColor',vis_color)
@@ -205,11 +213,7 @@ for ind = 1:length(subjects)
 %         text(mean_V,max_p+.02,sprintf('%d',pV))
 %     end    
 %     
-    title('Saccade endpoints')
-    xlabel('Horizontal eye position (deg)')
-    ylabel('p in bin')
-    legend([A_hist,V_hist,ref_tar_A,ref_tar_V],'Labeled Auditory', 'Labeled Visual','A target','V target')
-    
+
     %% save out figure
     set(gcf,'Position',[25,50,1400,350])
     if savefiles
@@ -217,6 +221,7 @@ for ind = 1:length(subjects)
         saveas(gcf,sprintf('%s\\%s_rawdata',figpath,subject_id{ind}),'png');
     end
     
+
 end
 
 
