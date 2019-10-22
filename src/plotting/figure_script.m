@@ -271,12 +271,14 @@ for ind = 1:length(models)
     n_param = n_params{ind};
     % code for get_model_comp_table returns the nll as well as the AIC and BIC
     
-    [~,~,nll_table_h] = get_model_comp_table(models_h,model,n_param);
-    [~,~,nll_table_m] = get_model_comp_table(models_m,model,n_param);
+    [AICh,BICh,nll_table_h] = get_model_comp_table(models_h,model,n_param);
+    [AICm,BICm,nll_table_m] = get_model_comp_table(models_m,model,n_param);
     %but this is in the wrong direction (subjects x models) so need to
-    %transpose, and also make log likelihood instead of nll
-    Lh = -1*nll_table_h';
-    Lm = -1*nll_table_m';
+    %transpose
+    %here I need the log model evidence, which is equivalent to the BIC or
+    %AIC * -0.5
+    Lh = -0.5*BICh';
+    Lm = -0.5*BICm';
     %Use VBA toolbox to get posterior frequency and protected exceedance
     %input is a KxN array of loglikelihood with K models by N subjects
     options.DisplayWin = 0;
