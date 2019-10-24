@@ -1,5 +1,9 @@
-This project is attempting to characterize multisensory causal inference at the behavioral level in both humans and primates.
+This project is contains all code and data used for the manuscript "Monkeys and Humans Implement Causal Inference to Simultaneously Localize Auditory and Visual Stimuli" (Mohl, Pearson, & Groh 2019, bioRxiv:)
+
+src: contains all source code relevant to this project, including code for preparing data, fitting models, and generating plots
+- Running analysis: model fitting and analysis is initiated from master_script.m
+- Plotting: all plots used in the manuscript are included in figure_script.m
+- lautils: borrows utility functions for numerical integration from https://github.com/lacerbi/lautils-mat
 
 
-Working notes are in a google doc: https://docs.google.com/document/d/1_AVui6qRn20lNn3aZ-qCdgquiGFYq0-vTW2MxcVFV8o/edit?usp=sharing
-
+data: contains data used for this paper, including all human and monkey behavioral files in as tables in .mat format
