@@ -1,4 +1,4 @@
-This project is contains all code and data used for the manuscript "Monkeys and Humans Implement Causal Inference to Simultaneously Localize Auditory and Visual Stimuli" (Mohl, Pearson, & Groh 2019, bioRxiv:)
+This project is contains all code and data used for the manuscript "Monkeys and Humans Implement Causal Inference to Simultaneously Localize Auditory and Visual Stimuli" (Mohl, Pearson, & Groh 2019, bioRxiv doi:10.1101/823385)
 
 src: contains all source code relevant to this project, including code for preparing data, fitting models, and generating plots
 - Running analysis: model fitting and analysis is initiated from master_script.m
