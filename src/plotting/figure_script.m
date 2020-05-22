@@ -8,7 +8,7 @@
 % Description: generates plots for the CI behavioral manuscript
 %
 
- local_directory = 'C:\Users\jtm47\Documents\Projects\CI_behavioral\';
+ local_directory = 'D:\GitHub\CI_behavioral\';
  cd(local_directory)
 
 addpath('src', 'src\plotting','results','data','src\lautils');
@@ -126,27 +126,6 @@ raw_behavior_stats_table.Properties.VariableNames = {'Subject','A_error','V_erro
 % model(4) = prior type: naive normal (1), discrete empirical (2), normal mixture empirical (3)
 model = [1 1 3 1];
 
-% plot individually for monkeys
-% for ind = 1:length(models_m)
-%     m=models_m{ind};
-%     subject = m.subject;
-%     model_ind = ismember(vertcat(m.models{:}),model,'rows');
-%     conditions = m.conditions{model_ind};
-%     if model(3) == 3 %joint fit models have cell array rather than vectors for these
-%         responses = m.responses{model_ind}{1};
-%         fit_dist = m.fit_dist{model_ind}{1};
-%     else
-%         responses = m.responses{model_ind};
-%         fit_dist = m.fit_dist{model_ind};
-%     end
-%     figure
-%     plot_unity(conditions,responses,fit_dist);
-%     title(sprintf('percent trials reported unity by target separation \n %s model %d%d%d%d',subject, model))
-%     if savefiles
-%         saveas(gcf,sprintf('%s\\%s_unity_combined',figpath,subject),'svg');
-%     end
-% end
-
 % plot combined for humans
 figure
 plot_unity_combined(models_h,model)
@@ -244,12 +223,20 @@ for ind = 1:length(subj_models)
         model_ind = ismember(vertcat(this_m.models{:}),model,'rows');
         subj_thetas(subj_ind,:) = this_m.thetas{model_ind};
     end
-    theta_means(ind,:) = mean(subj_thetas);
-    theta_sem(ind,:) = std(subj_thetas)./sqrt(size(subj_thetas,1));
+    this_mean = mean(subj_thetas);
+    theta_means(ind,:) = this_mean;
+    this_sem = std(subj_thetas)./sqrt(size(subj_thetas,1));
+    theta_sem(ind,:) = this_sem;
+    ts = tinv([0.025  0.975],size(subj_thetas,1)-1);      % T-Score
+    this_95CI = ts(2)*this_sem; %95% confidence interval, only taking the positive side but its symmetric
+    theta_95CI(ind,:) = this_95CI;
 end
 
+%this is an across subject mean, SEM, and confidence interval
 mean_table=array2table(theta_means,'VariableNames',theta_labels,'RowNames',subj_labels)
 sem_table=array2table(theta_sem,'VariableNames',theta_labels,'RowNames',subj_labels)
+CI95_table = array2table(theta_95CI,'VariableNames',theta_labels,'RowNames',subj_labels)
+
 
 %% ANOVA of percent single saccade by target sep
 
