@@ -7,3 +7,5 @@ src: contains all source code relevant to this project, including code for prepa
 
 
 data: contains data used for this paper, including all human and monkey behavioral files in as tables in .mat format
+
+Note: code was written for MATLAB version 2018b not run on MATLAB version 2018a or earlier.
