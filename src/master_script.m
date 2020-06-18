@@ -12,7 +12,7 @@
 
 %% hardcoded parameters
 close all; clear all;
-local_directory = 'D:\GitHub\CI_behavioral\src';
+local_directory = 'D:\GitHub\CI_behavioral';
 cd(local_directory)
 addpath('data','src','src\lautils', 'src\plotting');
 
