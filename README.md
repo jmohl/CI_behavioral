@@ -4,10 +4,10 @@ This project is contains all code and data used for the manuscript "Monkeys and 
 ### Description of contents
 src: contains all source code relevant to this project, including code for preparing data, fitting models, and generating plots
 - Running analysis: model fitting and analysis is initiated from master_script.m
-- Plotting: all plots used in the manuscript are included in figure_script.m
+- Plotting: all plots used in the manuscript are included in figure_script.m. Individual functions are contained in 'plotting' folder.
 - lautils: borrows utility functions for numerical integration from https://github.com/lacerbi/lautils-mat
 
-data: contains data used for this paper, including all human and monkey behavioral files in as tables in .mat format
+data: contains data used for this paper, including all human and monkey behavioral files as tables in .mat format.
 
 results: not included in repo, but all figures and intermediate data files will be generated in this folder when the code is run.
 
