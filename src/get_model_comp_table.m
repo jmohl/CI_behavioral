@@ -3,11 +3,13 @@
 % -------------------
 % Jeff Mohl
 % 8/5/19
+% Updated 9/2/20
 % -------------------
 %
 % Description: given a cell array of model structures, return AIC and BIC
 % values across subjects
 %
+% Todo: Needs to be updated to work with k folds, instead of (in addition to) across subjects
 
 function [AIC,BIC,nll_array] = get_model_comp_table(m_fits, models, n_params)
 
